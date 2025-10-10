@@ -1,9 +1,5 @@
 date,description,amount
 2025-10-01,Example transaction,-12.34
-<<<<<<< HEAD
-date,description,amount
-2025-10-01,Example transaction,-12.34
-=======
 txn_id,date,amount,currency,description,mcc,category,channel,merchant_city,merchant_country,card_last4,is_refund,note
 txn_000001,2025-04-01,-4.42,GBP,GAILS BAKERY,5814,coffee,card_present,London,GBR,2201,False,Coffee break
 txn_000002,2025-04-01,-41.29,GBP,OCADO RETAIL ONLINE,5499,groceries,online,Hatfield,GBR,9812,False,Groceries
@@ -1686,4 +1682,3 @@ txn_001659,2025-09-30,-40.81,GBP,TESCO EXPRESS LONDON,5411,groceries,card_presen
 txn_001658,2025-09-30,-12.87,GBP,UBER TRIP HELP.UBER.COM,4121,transport,online,London,GBR,0065,False,Travel
 txn_001657,2025-09-30,-4.74,GBP,GAILS BAKERY,5814,coffee,card_present,London,GBR,9812,False,Coffee break
 txn_001656,2025-09-30,-35.07,GBP,WAITROSE & PARTNERS,5411,groceries,card_present,Guildford,GBR,0065,False,Groceries
->>>>>>> 16c29d1 (synthetic data synth.py implementation)
