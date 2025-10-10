@@ -441,16 +441,17 @@ def build_focus_summaries(
         focus_definitions=focus_definitions,
     )
 
-    def _call_with_optional_args(
-        fn: Any,
-        base_kwargs: dict[str, Any],
-        optional_kwargs: dict[str, Any],
-    ) -> Any:
+    def _call_with_optional_args(fn: Any, base_kwargs: dict[str, Any], optional_kwargs: dict[str, Any]) -> Any:
+        """Call fn with base_kwargs plus optional_kwargs, silently dropping any unsupported kwarg reported by a TypeError.
+
+        This helps with differences between OpenAI SDK versions which may not accept newer optional arguments like
+        `response_format` or `max_output_tokens`.
+        """
         attempt_kwargs = dict(base_kwargs)
         try:
             signature = inspect.signature(fn)
             params = signature.parameters
-        except (TypeError, ValueError):
+        except Exception:
             params = None
 
         if params is None:
@@ -464,47 +465,43 @@ def build_focus_summaries(
             try:
                 return fn(**attempt_kwargs)
             except TypeError as exc:
-                match = re.search(r"got an unexpected keyword argument '([^']+)'", str(exc))
+                # Look for the typical message when a function doesn't accept a kwarg
+                match = re.search(r"unexpected keyword argument '([^']+)'", str(exc))
                 if not match:
                     raise
                 invalid_key = match.group(1)
-                if invalid_key not in attempt_kwargs:
-                    raise
-                LOGGER.debug("Removing unsupported OpenAI parameter: %s", invalid_key)
-                del attempt_kwargs[invalid_key]
+                if invalid_key in attempt_kwargs:
+                    LOGGER.debug("Dropping unsupported OpenAI parameter: %s", invalid_key)
+                    del attempt_kwargs[invalid_key]
+                    continue
+                raise
 
     try:
         response = None
         if hasattr(client, "responses"):
-            responses_base = dict(
-                model=model,
-                input=[
+            base = {
+                "model": model,
+                "input": [
                     {"role": "system", "content": "You are a concise financial coach."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.2,
-                max_output_tokens=1200,
-            )
-            response = _call_with_optional_args(
-                client.responses.create,
-                responses_base,
-                {"response_format": {"type": "json_object"}},
-            )
+                "temperature": 0.2,
+                "max_output_tokens": 1200,
+            }
+            optional = {"response_format": {"type": "json_object"}}
+            response = _call_with_optional_args(client.responses.create, base, optional)
         elif hasattr(client, "chat") and hasattr(client.chat, "completions"):
-            chat_base = dict(
-                model=model,
-                messages=[
+            base = {
+                "model": model,
+                "messages": [
                     {"role": "system", "content": "You are a concise financial coach."},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.2,
-                max_tokens=800,
-            )
-            response = _call_with_optional_args(
-                client.chat.completions.create,
-                chat_base,
-                {"response_format": {"type": "json_object"}},
-            )
+                "temperature": 0.2,
+                "max_tokens": 800,
+            }
+            optional = {"response_format": {"type": "json_object"}}
+            response = _call_with_optional_args(client.chat.completions.create, base, optional)
         else:  # pragma: no cover - should not happen for supported SDKs
             raise RuntimeError("OpenAI client does not support responses or chat.completions APIs")
 

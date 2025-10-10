@@ -99,6 +99,8 @@ def render_dashboard(
 
     with left_col:
         render_ai_summary(context["ai_summary"])
+        st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
+        render_recurring_charges(context["recurring"])
 
     with right_col:
         with st.container():
@@ -119,11 +121,9 @@ def render_dashboard(
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
-    weekly_col, recurring_col = st.columns([1.4, 1], gap="large")
+    weekly_col, _recurring_col = st.columns([1.4, 1], gap="large")
     with weekly_col:
         render_weekly_spend(context["weekly_spend"])
-    with recurring_col:
-        render_recurring_charges(context["recurring"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 

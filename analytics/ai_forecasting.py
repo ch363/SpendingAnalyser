@@ -174,14 +174,27 @@ def forecast_weekly_spend(
     prompt = _build_prompt(history, actuals, upcoming)
 
     try:
-        response = client.responses.create(
-            model=model,
-            input=[
-                {"role": "system", "content": "You are a financial forecasting assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = client.responses.create(
+                model=model,
+                input=[
+                    {"role": "system", "content": "You are a financial forecasting assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format={"type": "json_object"},
+            )
+        except TypeError as exc:
+            # Some SDK versions don't accept `response_format` — retry without it
+            if "response_format" in str(exc):
+                response = client.responses.create(
+                    model=model,
+                    input=[
+                        {"role": "system", "content": "You are a financial forecasting assistant."},
+                        {"role": "user", "content": prompt},
+                    ],
+                )
+            else:
+                raise
         payload = getattr(response, "output_text", "")
         if not payload:
             raise ValueError("No output from OpenAI response")
