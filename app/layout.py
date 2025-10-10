@@ -117,13 +117,13 @@ def render_dashboard(
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
-    render_subscriptions(context["subscriptions"])
-
-    st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
-
-    weekly_col, _recurring_col = st.columns([1.4, 1], gap="large")
-    with weekly_col:
+    # Render weekly tracker and subscriptions side-by-side
+    week_col, subs_col = st.columns([1.4, 1], gap="large")
+    with week_col:
         render_weekly_spend(context["weekly_spend"])
+    with subs_col:
+        # Render subscriptions inline to the right of the weekly tracker
+        render_subscriptions(context["subscriptions"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 

@@ -21,10 +21,12 @@ def render_yearly_net_flow(series: NetFlowSeries) -> None:
     )
     df["Display"] = df["Amount"].abs()
 
+    # Use the absolute 'Display' values for the bar heights so both In and Out
+    # render above the x-axis, while preserving Type for coloring and grouping.
     fig = px.bar(
         df,
         x="Month",
-        y="Amount",
+        y="Display",
         color="Type",
         barmode="group",
         color_discrete_map={"In": "#00ff48", "Out": "#ff0000"},

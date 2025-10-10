@@ -86,8 +86,11 @@ def render_recurring_charges(tracker: RecurringChargesTracker) -> None:
 </style>
 """
 
-    # Estimate height to avoid clipping (header + rows)
-    est_height = 150 + 48 * (len(tracker.charges) + 1)
+    # Estimate height to avoid clipping (header + rows).
+    # Use a slightly tighter estimate so the card doesn't create excessive whitespace
+    # between cards on the page.
+    row_count = max(1, len(tracker.charges))
+    est_height = 100 + 55 * row_count
     components.html(html, height=est_height, scrolling=False)
 
 
