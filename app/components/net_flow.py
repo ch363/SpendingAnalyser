@@ -27,7 +27,7 @@ def render_yearly_net_flow(series: NetFlowSeries) -> None:
         y="Amount",
         color="Type",
         barmode="group",
-        color_discrete_map={"In": "#00c2ff", "Out": "#3c79ff"},
+        color_discrete_map={"In": "#00ff48", "Out": "#ff0000"},
         text="Display",
     )
     fig.update_traces(

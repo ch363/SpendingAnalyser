@@ -16,17 +16,27 @@ def render_weekly_spend(series: WeeklySpendSeries) -> None:
         {
             "Week": [point.week_label for point in series.points],
             "Spend": [point.amount for point in series.points],
+            "Type": ["Forecast" if point.is_forecast else "Actual" for point in series.points],
+            "Confidence": [point.confidence for point in series.points],
         }
     )
+
+    color_map = {"Actual": "#3c79ff", "Forecast": "#a5bfff"}
 
     fig = px.bar(
         df,
         x="Week",
         y="Spend",
         text="Spend",
-        color_discrete_sequence=["#3c79ff"],
+        color="Type",
+        color_discrete_map=color_map,
     )
-    fig.update_traces(texttemplate="£%{text:,.0f}", textposition="outside", hovertemplate="%{x}: £%{y:,.0f}<extra></extra>")
+    fig.update_traces(
+        texttemplate="£%{text:,.0f}",
+        textposition="outside",
+        hovertemplate="%{x} (%{customdata[0]}): £%{y:,.0f}<br>Confidence: %{customdata[1]:.0%}<extra></extra>",
+        customdata=df[["Type", "Confidence"]].fillna(0.0).to_numpy(),
+    )
     fig.update_layout(
         margin=dict(l=10, r=10, t=10, b=30),
         yaxis_title="",

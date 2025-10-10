@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Tuple
+from typing import Mapping, Tuple
 
 
 @dataclass(frozen=True)
@@ -75,19 +75,29 @@ class BudgetTracker:
 
 
 @dataclass(frozen=True)
+class AISummaryFocus:
+    """Renderable content for a specific AI summary focus option."""
+
+    headline: str
+    narrative: str
+    supporting_points: Tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class AISummary:
     """Structured copy used by the AI hero card."""
 
-    headline: str
-    supporting_points: Tuple[str, ...]
     focus_options: Tuple[str, ...]
     default_focus: str
+    focus_summaries: Mapping[str, AISummaryFocus]
 
 
 @dataclass(frozen=True)
 class WeeklySpendPoint:
     week_label: str
     amount: float
+    is_forecast: bool = False
+    confidence: float | None = None
 
 
 @dataclass(frozen=True)
@@ -174,6 +184,7 @@ __all__ = [
     "SnapshotMetric",
     "MonthlySnapshot",
     "BudgetTracker",
+    "AISummaryFocus",
     "AISummary",
     "WeeklySpendPoint",
     "WeeklySpendSeries",

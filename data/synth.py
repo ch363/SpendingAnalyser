@@ -620,7 +620,7 @@ def generate_synthetic_transactions(
         for payday_day in (1, 15):
             payday_date = _clamp_day(year, month, payday_day)
             employer = _rng_choice(INCOME_MERCHANTS, rng)
-            base_income = rng.normal(2650, 140)
+            base_income = rng.normal(10234, 1234)
             bonus = rng.normal(420, 70) if payday_day == 15 and rng.random() < 0.22 else 0
             amount = abs(base_income + bonus)
             schedule_transaction(payday_date, amount, employer, card_last4="0000")
