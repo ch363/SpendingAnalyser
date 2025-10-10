@@ -1,6 +1,9 @@
-# Minimal runtime requirements for the scaffold (add versions when implementing):
-streamlit
-pandas
-plotly
-requests
+pandas>=2.2
+numpy>=1.26
+plotly>=5.23
+altair>=5.0
+streamlit>=1.38
+scikit-learn>=1.4
+openai>=1.40.0,<2
+
 

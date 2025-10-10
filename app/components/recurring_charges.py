@@ -2,26 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class RecurringCharge:
-    name: str
-    amount: float
-    cadence: str
-    next_date: str
-    status: str
-
-
-@dataclass(frozen=True)
-class RecurringChargesTracker:
-    title: str
-    subtitle: str
-    charges: Sequence[RecurringCharge]
+from core.models import RecurringCharge, RecurringChargesTracker
 
 
 def render_recurring_charges(tracker: RecurringChargesTracker) -> None:

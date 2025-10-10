@@ -293,6 +293,200 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			color: var(--app-warning);
 		}}
 
+		.category-insight {{
+			max-width: 100%;
+		}}
+
+		.category-insight__surface {{
+			background: #ffffff;
+			border-radius: 28px;
+			border: 1px solid rgba(216, 225, 248, 0.8);
+			box-shadow: 0 30px 45px rgba(15, 26, 51, 0.08);
+			padding: 0.6rem;
+		}}
+
+		.category-insight__surface-inner {{
+			background: linear-gradient(180deg, rgba(244, 246, 255, 0.7), rgba(250, 251, 255, 0.95));
+			border-radius: 22px;
+			padding: 1.8rem;
+		}}
+
+		.category-insight__surface-body {{
+			display: flex;
+			flex-direction: column;
+			gap: 2rem;
+		}}
+
+		.category-insight--empty {{
+			align-items: center;
+			text-align: center;
+			gap: 1rem;
+			padding: 2.2rem;
+		}}
+
+		.category-insight__intro {{
+			display: flex;
+			flex-direction: column;
+			gap: 0.65rem;
+		}}
+
+		.category-insight__pill {{
+			display: inline-flex;
+			align-items: center;
+			padding: 0.35rem 0.95rem;
+			background: rgba(12, 111, 253, 0.12);
+			color: var(--app-primary);
+			border-radius: 999px;
+			font-size: 0.78rem;
+			font-weight: 600;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}}
+
+		.category-insight__intro h2 {{
+			margin: 0;
+			font-size: 1.8rem;
+			font-weight: 650;
+			color: var(--app-text);
+		}}
+
+		.category-insight__total {{
+			font-weight: 600;
+			font-size: 1.05rem;
+			color: var(--app-text-muted);
+		}}
+
+		.category-insight .stSelectbox > div {{
+			background: rgba(255, 255, 255, 0.9);
+			border-radius: 18px;
+			padding: 0.35rem 0.8rem;
+			border: 1px solid rgba(12, 111, 253, 0.24);
+			box-shadow: 0 8px 18px rgba(12, 111, 253, 0.12);
+		}}
+
+		.category-insight .stSelectbox label {{
+			font-size: 0.78rem;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--app-text-muted);
+			font-weight: 600;
+		}}
+
+		.status-badge {{
+			display: inline-flex;
+			align-items: center;
+			padding: 0.35rem 0.85rem;
+			border-radius: 999px;
+			font-size: 0.75rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+		}}
+
+		.status-badge--improved {{
+			background: rgba(34, 197, 94, 0.16);
+			color: #15803d;
+		}}
+
+		.status-badge--higher {{
+			background: rgba(249, 115, 22, 0.16);
+			color: #c2410c;
+		}}
+
+		.status-badge--neutral {{
+			background: rgba(148, 163, 184, 0.16);
+			color: var(--app-text-muted);
+		}}
+
+		.category-detail-panel {{
+			display: flex;
+			flex-direction: column;
+			gap: 1.5rem;
+			margin-bottom: 1rem;
+		}}
+
+		.category-detail-panel__header {{
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			gap: 1rem;
+		}}
+
+		.category-detail-panel__header h4 {{
+			margin: 0;
+			font-size: 1.4rem;
+			font-weight: 600;
+		}}
+
+		.category-detail-panel__range {{
+			display: block;
+			margin-top: 0.35rem;
+			font-size: 0.9rem;
+			color: var(--app-text-muted);
+		}}
+
+		.category-detail-panel__metrics {{
+			display: grid;
+			grid-template-columns: repeat(2, minmax(140px, 1fr));
+			gap: 1.25rem;
+		}}
+
+		.metric-card {{
+			background: linear-gradient(160deg, rgba(255,255,255,0.95), rgba(244,248,255,0.85));
+			border-radius: 18px;
+			padding: 1.1rem 1.35rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.45rem;
+			border: 1px solid rgba(216, 225, 248, 0.7);
+			box-shadow: 0 12px 25px rgba(12, 52, 104, 0.08);
+		}}
+
+		.metric-card span {{
+			font-size: 0.82rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			color: var(--app-text-muted);
+			font-weight: 600;
+		}}
+
+		.metric-card strong {{
+			font-size: 1.45rem;
+			font-weight: 650;
+			color: var(--app-text);
+		}}
+
+		.metric-card small {{
+			font-size: 0.88rem;
+			color: var(--app-text-muted);
+			font-weight: 600;
+		}}
+
+		.metric-card--delta {{
+			background: rgba(12, 111, 253, 0.08);
+			border-color: rgba(12, 111, 253, 0.18);
+		}}
+
+		.category-detail-panel__top-merchant {{
+			display: flex;
+			flex-direction: column;
+			gap: 0.35rem;
+		}}
+
+		.category-detail-panel__top-merchant span {{
+			font-size: 0.78rem;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: var(--app-text-muted);
+			font-weight: 600;
+		}}
+
+		.category-detail-panel__top-merchant p {{
+			margin: 0;
+			font-weight: 600;
+			color: var(--app-text);
+		}}
+
 		.subscriptions-card__totals {{
 			display: flex;
 			flex-direction: column;

@@ -2,25 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class SnapshotMetric:
-    label: str
-    value: str
-    delta: str | None = None
-    is_positive: bool | None = None
-
-
-@dataclass(frozen=True)
-class MonthlySnapshot:
-    title: str
-    period_label: str
-    metrics: Sequence[SnapshotMetric]
+from core.models import MonthlySnapshot, SnapshotMetric
 
 
 def render_monthly_snapshot(snapshot: MonthlySnapshot) -> None:

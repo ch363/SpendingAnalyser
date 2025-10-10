@@ -2,26 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class MonthlyFlow:
-    month: str
-    inflow: float
-    outflow: float
-
-
-@dataclass(frozen=True)
-class NetFlowSeries:
-    title: str
-    subtitle: str
-    months: Sequence[MonthlyFlow]
+from core.models import MonthlyFlow, NetFlowSeries
 
 
 def render_yearly_net_flow(series: NetFlowSeries) -> None:

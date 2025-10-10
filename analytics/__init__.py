@@ -1,6 +1,9 @@
-"""Analytics package: forecasting, categorisation, recurring detection, duplicates.
+"""Analytics package entrypoint for feature-specific helpers."""
 
-Placeholders only.
-"""
+from .monthly_overview import MonthlyOverview, build_budget_tracker, build_monthly_snapshot
 
-__all__ = ["forecasting", "categorisation", "recurring", "duplicates"]
+__all__ = [
+	"MonthlyOverview",
+	"build_budget_tracker",
+	"build_monthly_snapshot",
+]

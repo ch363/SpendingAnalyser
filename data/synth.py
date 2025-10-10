@@ -88,7 +88,7 @@ RENT_MERCHANT = MerchantProfile(
     channel="standing_order",
     city="London",
     country="GBR",
-    default_note="Monthly rent",
+    default_note="London rent",
 )
 
 UTILITY_MERCHANTS: Sequence[Tuple[MerchantProfile, float, float]] = (
@@ -655,16 +655,15 @@ def generate_synthetic_transactions(
                 schedule_transaction(event_date, amount, merchant, note="Event week treat")
 
     for day in all_days:
-        # optionally filter scheduled transactions to only card-based channels
         raw_day_entries = list(scheduled_by_day.get(day, []))
-        if card_only:
-            day_entries = [e for e in raw_day_entries if e[1].channel in ("card_present", "online")]
-        else:
-            day_entries = raw_day_entries
 
-        # target number of transactions per day (discretionary + scheduled)
+        card_scheduled = sum(1 for entry in raw_day_entries if entry[1].channel in ("card_present", "online"))
+        baseline_count = card_scheduled if card_only else len(raw_day_entries)
+
         target_transactions = int(rng.integers(min_daily_txns, max_daily_txns + 1))
-        discretionary_needed = max(0, target_transactions - len(day_entries))
+        discretionary_needed = max(0, target_transactions - baseline_count)
+
+        day_entries = list(raw_day_entries)
 
         for _ in range(discretionary_needed):
             merchant, amount, note = sample_daily_transaction(day)
@@ -698,13 +697,13 @@ def write_transactions_csv(
     """
 
     # If path is falsy, write to project fixtures seed path and generate
-    # last 6 full months, 8-10 card transactions per day.
+    # the last 6 months up to today, targeting 8-10 daily card transactions.
     if not path:
         path = os.path.join(os.path.dirname(__file__), "fixtures", "seed.csv")
         df = generate_synthetic_transactions(
             seed=seed,
             months_full=6,
-            include_current_partial=False,
+            include_current_partial=True,
             min_daily_txns=8,
             max_daily_txns=10,
             card_only=True,

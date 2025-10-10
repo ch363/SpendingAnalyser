@@ -2,30 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class Subscription:
-    name: str
-    monthly_cost: float
-    months_active: int
-
-    @property
-    def cumulative_cost(self) -> float:
-        return self.monthly_cost * self.months_active
-
-
-@dataclass(frozen=True)
-class SubscriptionTracker:
-    title: str
-    subtitle: str
-    subscriptions: Sequence[Subscription]
-    total_monthly: float
-    total_cumulative: float
+from core.models import Subscription, SubscriptionTracker
 
 
 def render_subscriptions(tracker: SubscriptionTracker) -> None:
@@ -61,15 +40,23 @@ def render_subscriptions(tracker: SubscriptionTracker) -> None:
             """,
             unsafe_allow_html=True,
         )
-        for sub in tracker.subscriptions:
+        if tracker.subscriptions:
+            for sub in tracker.subscriptions:
+                st.markdown(
+                    f"""
+                    <div class="table-list__row">
+                        <span>{sub.name}</span>
+                        <span>£{sub.monthly_cost:,.0f}</span>
+                        <span>{sub.months_active}</span>
+                        <span>£{sub.cumulative_cost:,.0f}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        else:
             st.markdown(
-                f"""
-                <div class="table-list__row">
-                    <span>{sub.name}</span>
-                    <span>£{sub.monthly_cost:,.0f}</span>
-                    <span>{sub.months_active}</span>
-                    <span>£{sub.cumulative_cost:,.0f}</span>
-                </div>
+                """
+                <div class="table-list__empty">No recurring subscriptions detected in the selected period.</div>
                 """,
                 unsafe_allow_html=True,
             )

@@ -6,9 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from app.components.ai_summary import AISummary
-from app.components.budget_tracker import BudgetTracker
-from app.components.category_breakdown import CategoryBreakdown, CategorySlice
-from app.components.monthly_snapshot import MonthlySnapshot, SnapshotMetric
+from core.models import BudgetTracker, MonthlySnapshot, SnapshotMetric
 from app.components.net_flow import MonthlyFlow, NetFlowSeries
 from app.components.recurring_charges import RecurringCharge, RecurringChargesTracker
 from app.components.subscriptions import Subscription, SubscriptionTracker
@@ -20,7 +18,6 @@ class DashboardSample:
     ai_summary: AISummary
     monthly_snapshot: MonthlySnapshot
     budget_tracker: BudgetTracker
-    category_breakdown: CategoryBreakdown
     subscriptions: SubscriptionTracker
     weekly_spend: WeeklySpendSeries
     recurring_charges: RecurringChargesTracker
@@ -92,19 +89,6 @@ def load_demo_dashboard() -> DashboardSample:
         is_month_complete=False,
     )
 
-    category_breakdown = CategoryBreakdown(
-        title="Category split",
-        subtitle="Spending mix",
-        slices=(
-            CategorySlice(name="Housing", value=1180, share=34, change=2.0, is_positive=False),
-            CategorySlice(name="Transport", value=240, share=7, change=-6.1, is_positive=True),
-            CategorySlice(name="Groceries", value=486, share=14, change=1.5, is_positive=False),
-            CategorySlice(name="Dining out", value=210, share=6, change=-11.2, is_positive=True),
-            CategorySlice(name="Subscriptions", value=195, share=6, change=8.5, is_positive=False),
-            CategorySlice(name="Investments", value=169, share=5, change=4.4, is_positive=True),
-        ),
-    )
-
     subscription_items = (
         Subscription(name="Netflix", monthly_cost=12, months_active=28),
         Subscription(name="Spotify", monthly_cost=10, months_active=42),
@@ -169,7 +153,6 @@ def load_demo_dashboard() -> DashboardSample:
         ai_summary=ai_summary,
         monthly_snapshot=snapshot,
         budget_tracker=tracker,
-        category_breakdown=category_breakdown,
         subscriptions=subscriptions,
         weekly_spend=weekly_spend,
         recurring_charges=recurring_charges,

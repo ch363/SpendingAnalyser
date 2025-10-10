@@ -2,21 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class BudgetTracker:
-    title: str
-    current_spend: float
-    projected_or_actual_spend: float
-    savings_projection: float
-    variance_percent: float
-    allocated_budget: float
-    is_under_budget: bool
-    is_month_complete: bool
+from core.models import BudgetTracker
 
 
 def _format_currency(value: float) -> str:

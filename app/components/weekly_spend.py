@@ -2,25 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class WeeklySpendPoint:
-    week_label: str
-    amount: float
-
-
-@dataclass(frozen=True)
-class WeeklySpendSeries:
-    title: str
-    subtitle: str
-    points: Sequence[WeeklySpendPoint]
+from core.models import WeeklySpendPoint, WeeklySpendSeries
 
 
 def render_weekly_spend(series: WeeklySpendSeries) -> None:

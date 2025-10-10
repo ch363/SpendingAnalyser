@@ -7,25 +7,19 @@ from typing import Any
 
 import streamlit as st
 
+import pandas as pd
+
 from app.components import (
     render_ai_summary,
     render_budget_tracker,
-    render_category_breakdown_chart,
-    render_category_breakdown_details,
+    render_category_breakdown,
     render_monthly_snapshot,
     render_subscriptions,
     render_weekly_spend,
     render_recurring_charges,
     render_yearly_net_flow,
 )
-from app.components.ai_summary import AISummary
-from app.components.budget_tracker import BudgetTracker
-from app.components.category_breakdown import CategoryBreakdown
-from app.components.monthly_snapshot import MonthlySnapshot
-from app.components.net_flow import NetFlowSeries
-from app.components.recurring_charges import RecurringChargesTracker
-from app.components.subscriptions import SubscriptionTracker
-from app.components.weekly_spend import WeeklySpendSeries
+from analytics.dashboard import DashboardContext, build_dashboard_context
 
 def _coerce_date_range(selection: Any) -> tuple[date, date]:
     if isinstance(selection, (list, tuple)):
@@ -53,15 +47,8 @@ def _format_range_label(start: date, end: date) -> str:
 
 def render_dashboard(
     *,
-    ai_summary: AISummary,
-    monthly_snapshot: MonthlySnapshot,
-    budget_tracker: BudgetTracker,
-    category_breakdown: CategoryBreakdown,
-    subscriptions: SubscriptionTracker,
-    weekly_spend: WeeklySpendSeries,
-    recurring_charges: RecurringChargesTracker,
-    net_flow: NetFlowSeries,
     default_date_range: tuple[date, date],
+    transactions: pd.DataFrame,
 ) -> None:
     """Compose the two-column dashboard layout."""
 
@@ -104,41 +91,43 @@ def render_dashboard(
 
     left_col, right_col = st.columns([2, 1], gap="large")
 
+    context: DashboardContext = build_dashboard_context(
+        transactions,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
     with left_col:
-        render_ai_summary(ai_summary)
+        render_ai_summary(context["ai_summary"])
 
     with right_col:
         with st.container():
-            render_monthly_snapshot(monthly_snapshot)
+            render_monthly_snapshot(context["snapshot"])
 
         st.markdown("<div style='height: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.container():
-            render_budget_tracker(budget_tracker)
+            render_budget_tracker(context["budget"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
-    cat_left, cat_right = st.columns([1.3, 1], gap="large")
-    with cat_left:
-        render_category_breakdown_chart(category_breakdown)
-    with cat_right:
-        render_category_breakdown_details(category_breakdown)
+    render_category_breakdown(context["category_summary"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
-    render_subscriptions(subscriptions)
+    render_subscriptions(context["subscriptions"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
     weekly_col, recurring_col = st.columns([1.4, 1], gap="large")
     with weekly_col:
-        render_weekly_spend(weekly_spend)
+        render_weekly_spend(context["weekly_spend"])
     with recurring_col:
-        render_recurring_charges(recurring_charges)
+        render_recurring_charges(context["recurring"])
 
     st.markdown("<div style='height: 2rem'></div>", unsafe_allow_html=True)
 
-    render_yearly_net_flow(net_flow)
+    render_yearly_net_flow(context["net_flow"])
 
 
 __all__ = ["render_dashboard"]

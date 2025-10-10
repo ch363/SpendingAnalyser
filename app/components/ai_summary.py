@@ -2,20 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Sequence
-
 import streamlit as st
 
-
-@dataclass(frozen=True)
-class AISummary:
-    """Structured content for the AI summary hero card."""
-
-    headline: str
-    supporting_points: Sequence[str]
-    focus_options: Sequence[str]
-    default_focus: str
+from core.models import AISummary
 
 
 def render_ai_summary(summary: AISummary) -> str:
