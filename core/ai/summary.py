@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import inspect
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -439,29 +441,69 @@ def build_focus_summaries(
         focus_definitions=focus_definitions,
     )
 
+    def _call_with_optional_args(
+        fn: Any,
+        base_kwargs: dict[str, Any],
+        optional_kwargs: dict[str, Any],
+    ) -> Any:
+        attempt_kwargs = dict(base_kwargs)
+        try:
+            signature = inspect.signature(fn)
+            params = signature.parameters
+        except (TypeError, ValueError):
+            params = None
+
+        if params is None:
+            attempt_kwargs.update(optional_kwargs)
+        else:
+            for key, value in optional_kwargs.items():
+                if key in params:
+                    attempt_kwargs[key] = value
+
+        while True:
+            try:
+                return fn(**attempt_kwargs)
+            except TypeError as exc:
+                match = re.search(r"got an unexpected keyword argument '([^']+)'", str(exc))
+                if not match:
+                    raise
+                invalid_key = match.group(1)
+                if invalid_key not in attempt_kwargs:
+                    raise
+                LOGGER.debug("Removing unsupported OpenAI parameter: %s", invalid_key)
+                del attempt_kwargs[invalid_key]
+
     try:
         response = None
         if hasattr(client, "responses"):
-            response = client.responses.create(
+            responses_base = dict(
                 model=model,
                 input=[
                     {"role": "system", "content": "You are a concise financial coach."},
                     {"role": "user", "content": prompt},
                 ],
-                response_format={"type": "json_object"},
                 temperature=0.2,
                 max_output_tokens=1200,
             )
+            response = _call_with_optional_args(
+                client.responses.create,
+                responses_base,
+                {"response_format": {"type": "json_object"}},
+            )
         elif hasattr(client, "chat") and hasattr(client.chat, "completions"):
-            response = client.chat.completions.create(
+            chat_base = dict(
                 model=model,
                 messages=[
                     {"role": "system", "content": "You are a concise financial coach."},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.2,
-                response_format={"type": "json_object"},
                 max_tokens=800,
+            )
+            response = _call_with_optional_args(
+                client.chat.completions.create,
+                chat_base,
+                {"response_format": {"type": "json_object"}},
             )
         else:  # pragma: no cover - should not happen for supported SDKs
             raise RuntimeError("OpenAI client does not support responses or chat.completions APIs")
