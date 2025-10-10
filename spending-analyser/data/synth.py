@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import calendar
 import itertools
-import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -65,7 +64,20 @@ INCOME_MERCHANTS: Sequence[MerchantProfile] = (
         description="BACS CREDIT THAMES TECH LTD",
         mcc="6011",
         category="income",
-        channel="bank_transfer",
+    # If path is None or empty, default to the project's fixtures seed path and
+    # generate the last 6 full months up to today with 8-10 daily card transactions.
+    if not path:
+        path = "/Users/callum/Documents/Trading212/SpendingAnalyser/spending-analyser/data/fixtures/seed.csv"
+        df = generate_synthetic_transactions(
+            seed=seed,
+            months_full=6,
+            include_current_partial=False,
+            min_daily_txns=8,
+            max_daily_txns=10,
+            card_only=True,
+        )
+    else:
+        df = generate_synthetic_transactions(seed=seed, **kwargs)
         city="London",
         country="GBR",
         default_note="Monthly salary payment",
@@ -697,21 +709,7 @@ def write_transactions_csv(
     :func:`generate_synthetic_transactions`.
     """
 
-    # If path is falsy, write to project fixtures seed path and generate
-    # last 6 full months, 8-10 card transactions per day.
-    if not path:
-        path = os.path.join(os.path.dirname(__file__), "fixtures", "seed.csv")
-        df = generate_synthetic_transactions(
-            seed=seed,
-            months_full=6,
-            include_current_partial=False,
-            min_daily_txns=8,
-            max_daily_txns=10,
-            card_only=True,
-        )
-    else:
-        df = generate_synthetic_transactions(seed=seed, **kwargs)
-
+    df = generate_synthetic_transactions(seed=seed, **kwargs)
     df.to_csv(path, index=False)
     return df
 
@@ -834,3 +832,14 @@ def _inject_refunds(
         record["is_refund"] = True
         note = (record.get("note") or "").strip()
         record["note"] = (note + " | refund").strip()
+
+
+if __name__ == "__main__":
+    # When executed as a script, generate the canonical fixtures seed file
+    # (last 6 full months, 8-10 daily card transactions) and print its path.
+    try:
+        out = write_transactions_csv(path=None, seed=None)
+        print("Wrote seed fixture to /Users/callum/Documents/Trading212/SpendingAnalyser/spending-analyser/data/fixtures/seed.csv")
+        print(out.head().to_string(index=False))
+    except Exception as exc:
+        print("Failed to generate seed fixture:", exc)
