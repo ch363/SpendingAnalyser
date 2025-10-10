@@ -54,17 +54,64 @@ def render_ai_summary(summary: AISummary | Mapping[str, object]) -> str:
         )
 
         if focus_options:
-            button_columns = st.columns(len(focus_options)) if len(focus_options) <= 4 else st.columns(4)
-            for idx, option in enumerate(focus_options):
-                column = button_columns[idx % len(button_columns)]
-                button_clicked = column.button(
-                    option,
-                    key=f"{focus_key}_btn_{idx}",
-                    type="primary" if option == focus_selection else "secondary",
-                    use_container_width=True,
+            style_injected_key = "ai_summary_focus_style_injected"
+            if not st.session_state.get(style_injected_key):
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stSegmentedControl"] button {
+                        border-radius: 0.75rem !important;
+                        padding: 0.65rem 1.1rem !important;
+                        font-weight: 600 !important;
+                        transition: all 0.2s ease-in-out !important;
+                    }
+                    [data-testid="stSegmentedControl"] button[data-selected="true"],
+                    [data-testid="stSegmentedControl"] button[aria-pressed="true"] {
+                        background: linear-gradient(135deg, #2f6bff, #4ac7ff) !important;
+                        color: #ffffff !important;
+                        box-shadow: 0 10px 20px rgba(47, 107, 255, 0.25) !important;
+                        border: none !important;
+                    }
+                    [data-testid="stSegmentedControl"] button[data-selected="false"],
+                    [data-testid="stSegmentedControl"] button[aria-pressed="false"] {
+                        background: rgba(255,255,255,0.08) !important;
+                        color: var(--app-text-muted, #334155) !important;
+                        border: 1px solid rgba(148, 163, 184, 0.35) !important;
+                    }
+                    [data-testid="stSegmentedControl"] div[role="radiogroup"] {
+                        gap: 0.75rem !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
                 )
-                if button_clicked:
-                    focus_selection = option
+                st.session_state[style_injected_key] = True
+
+            if hasattr(st, "segmented_control"):
+                selected_option = st.segmented_control(
+                    "Focus selector",
+                    options=list(focus_options),
+                    default=focus_selection,
+                    key=f"{focus_key}_segmented",
+                    label_visibility="collapsed",
+                    format_func=str,
+                )
+            else:
+                try:
+                    default_index = list(focus_options).index(focus_selection)
+                except ValueError:
+                    default_index = 0
+                selected_option = st.radio(
+                    "Focus selector",
+                    options=list(focus_options),
+                    index=default_index,
+                    horizontal=True,
+                    key=f"{focus_key}_radio",
+                    label_visibility="collapsed",
+                )
+
+            if selected_option:
+                focus_selection = selected_option
 
         st.session_state[focus_key] = focus_selection
 
