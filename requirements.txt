@@ -1,0 +1,5 @@
+# Minimal runtime requirements for the scaffold (add versions when implementing):
+streamlit
+pandas
+plotly
+requests
