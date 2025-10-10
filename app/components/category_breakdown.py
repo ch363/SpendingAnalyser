@@ -92,52 +92,195 @@ def render_category_breakdown(summary: CategorySummary) -> None:
     """Render the category insight card with shared visualization builders."""
 
     if not summary.categories:
-        st.markdown(
-            """
-            <div class='category-insight category-insight--empty'>
-                <div>
-                    <div class='category-insight__pill'>Where money went</div>
+        with st.container():
+            style_key = "category_insight_style_v2"
+            if not st.session_state.get(style_key):
+                st.markdown(
+                    """
+                    <style>
+                    div[data-testid="stVerticalBlock"] > div:has(> div[data-testid="element-container"] .category-card__sentinel) {
+                        background: rgba(255,255,255,0.96);
+                        border-radius: 1.75rem;
+                        padding: 2rem;
+                        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.08);
+                        border: 1px solid rgba(148, 163, 184, 0.16);
+                    }
+                    .category-card__pill {
+                        display: inline-flex;
+                        align-items: center;
+                        padding: 0.4rem 0.9rem;
+                        border-radius: 999px;
+                        background: rgba(37, 99, 235, 0.1);
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        letter-spacing: 0.08em;
+                        text-transform: uppercase;
+                        color: #2563eb;
+                    }
+                    .category-card__empty h3 {
+                        margin: 0.8rem 0 0.4rem;
+                        font-size: 1.5rem;
+                        font-weight: 600;
+                        color: #0f172a;
+                    }
+                    .category-card__empty p {
+                        margin: 0;
+                        font-size: 0.95rem;
+                        color: rgba(15, 23, 42, 0.6);
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.session_state[style_key] = True
+
+            st.markdown("<div class='category-card__sentinel'></div>", unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div class='category-card__empty'>
+                    <div class='category-card__pill'>Where money went</div>
                     <h3>No spend recorded</h3>
                     <p>Select another period to review category spend.</p>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                """,
+                unsafe_allow_html=True,
+            )
         return
 
     categories = list(summary.categories)
     category_df = _category_dataframe(categories)
 
-    st.markdown("<div class='category-insight'>", unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class='category-insight__surface'>
-            <div class='category-insight__surface-inner'>
-                <div class='category-insight__surface-body'>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container():
+        style_key = "category_insight_style_v2"
+        if not st.session_state.get(style_key):
+            st.markdown(
+                """
+                <style>
+                div[data-testid="stVerticalBlock"] > div:has(> div[data-testid="element-container"] .category-card__sentinel) {
+                    background: rgba(255,255,255,0.96);
+                    border-radius: 1.75rem;
+                    padding: 2rem;
+                    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.08);
+                    border: 1px solid rgba(148, 163, 184, 0.16);
+                }
+                .category-card__header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 1.5rem;
+                }
+                .category-card__intro h2 {
+                    margin: 0.65rem 0 0.35rem;
+                    font-size: 1.9rem;
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+                .category-card__total {
+                    font-size: 0.95rem;
+                    color: rgba(15, 23, 42, 0.6);
+                }
+                .category-card__pill {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 0.4rem 0.9rem;
+                    border-radius: 999px;
+                    background: rgba(37, 99, 235, 0.1);
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #2563eb;
+                }
+                .status-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 36px;
+                    padding: 0 1.1rem;
+                    border-radius: 999px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    background: rgba(148, 163, 184, 0.16);
+                    color: rgba(15, 23, 42, 0.68);
+                    text-transform: uppercase;
+                    letter-spacing: 0.06em;
+                }
+                .status-badge--improved { background: rgba(34, 197, 94, 0.16); color: #15803d; }
+                .status-badge--higher { background: rgba(239, 68, 68, 0.16); color: #b91c1c; }
+                .status-badge--neutral { background: rgba(148, 163, 184, 0.16); color: rgba(15,23,42,0.68); }
+                .category-card__metrics {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: 1.1rem;
+                    margin-top: 1.6rem;
+                }
+                .category-card__metric {
+                    padding: 1rem 1.2rem;
+                    border-radius: 1rem;
+                    background: rgba(241, 245, 249, 0.6);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.35rem;
+                }
+                .category-card__metric span:first-child {
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    color: rgba(15, 23, 42, 0.55);
+                }
+                .category-card__metric strong {
+                    font-size: 1.25rem;
+                    color: #0f172a;
+                }
+                .category-card__metric small {
+                    font-size: 0.8rem;
+                    color: rgba(15, 23, 42, 0.6);
+                }
+                .category-card__top-merchant {
+                    margin-top: 1.4rem;
+                }
+                .category-card__top-merchant span {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    color: rgba(15, 23, 42, 0.65);
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                }
+                .category-card__top-merchant p {
+                    margin: 0.5rem 0 0;
+                    font-size: 0.95rem;
+                    color: rgba(15, 23, 42, 0.85);
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.session_state[style_key] = True
 
-    header_cols = st.columns([1.2, 0.8])
-    with header_cols[0]:
-        st.markdown(
-            f"""
-            <div class='category-insight__intro'>
-                <div class='category-insight__pill'>Where money went</div>
-                <h2>Category insight</h2>
-                <span class='category-insight__total'>{_format_currency(summary.total_amount)} total</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with header_cols[1]:
-        selected_name = st.selectbox(
-            "Category",
-            category_df["Category"],
-            index=0,
-            key="category_insight_selector",
-        )
+        st.markdown("<div class='category-card__sentinel'></div>", unsafe_allow_html=True)
+
+        header_cols = st.columns([1.25, 0.75])
+        with header_cols[0]:
+            st.markdown(
+                f"""
+                <div class='category-card__header'>
+                    <div class='category-card__intro'>
+                        <div class='category-card__pill'>Where money went</div>
+                        <h2>Category insight</h2>
+                        <span class='category-card__total'>{_format_currency(summary.total_amount)} total</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with header_cols[1]:
+            selected_name = st.selectbox(
+                "Category",
+                category_df["Category"],
+                index=0,
+                key="category_insight_selector",
+            )
 
     selected = next(item for item in categories if item.name == selected_name)
     metrics = _format_metrics(selected)
@@ -161,7 +304,7 @@ def render_category_breakdown(summary: CategorySummary) -> None:
     with detail_col:
         st.markdown(
             f"""
-            <div class='category-detail-panel'>
+            <div class='category-detail-panel category-card__metrics-wrapper'>
                 <div class='category-detail-panel__header'>
                     <div>
                         <h4>{selected.name}</h4>
@@ -171,26 +314,26 @@ def render_category_breakdown(summary: CategorySummary) -> None:
                     </div>
                     <span class='{metrics.badge_class}'>{metrics.badge_label}</span>
                 </div>
-                <div class='category-detail-panel__metrics'>
-                    <div class='metric-card'>
-                        <span> This period </span>
+                <div class='category-card__metrics'>
+                    <div class='category-card__metric'>
+                        <span>This period</span>
                         <strong>{metrics.this_period}</strong>
                     </div>
-                    <div class='metric-card'>
-                        <span> Share </span>
+                    <div class='category-card__metric'>
+                        <span>Share</span>
                         <strong>{metrics.share}</strong>
                     </div>
-                    <div class='metric-card'>
-                        <span> Previous </span>
+                    <div class='category-card__metric'>
+                        <span>Previous</span>
                         <strong>{metrics.previous}</strong>
                     </div>
-                    <div class='metric-card metric-card--delta'>
-                        <span> Change </span>
+                    <div class='category-card__metric'>
+                        <span>Change</span>
                         <strong>{metrics.change_amount}</strong>
                         <small>{metrics.change_pct}</small>
                     </div>
                 </div>
-                <div class='category-detail-panel__top-merchant'>
+                <div class='category-card__top-merchant'>
                     <span>Top merchants this month</span>
                     <p>{top_merchant_html}</p>
                 </div>
@@ -201,15 +344,7 @@ def render_category_breakdown(summary: CategorySummary) -> None:
 
         st.plotly_chart(vendor_chart, use_container_width=True, config={"displayModeBar": False})
 
-    st.markdown(
-        """
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
 
 
 __all__ = ["render_category_breakdown"]
