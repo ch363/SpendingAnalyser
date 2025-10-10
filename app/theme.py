@@ -12,7 +12,7 @@ import streamlit as st
 class Palette:
 	"""Color palette inspired by Trading212's visual identity."""
 
-	background: str = "#f4f6fb"
+	background: str = "#fdfdfd"
 	surface: str = "#ffffff"
 	surface_alt: str = "#f0f3ff"
 	primary: str = "#0051ff"
