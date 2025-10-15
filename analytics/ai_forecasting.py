@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -52,7 +53,7 @@ class WeeklyForecastResult:
     confidence: float
 
 
-def _ensure_client(api_key: str | None = None) -> OpenAI | None:
+def _ensure_client(api_key: str | None = None) -> Any | None:
     if OpenAI is None:  # dependency not available
         LOGGER.debug("OpenAI client not available; falling back to heuristics")
         return None
@@ -110,7 +111,105 @@ def _build_prompt(
     return json.dumps(instructions)
 
 
+def _extract_response_payload(response: Any) -> str:
+    if response is None:
+        return ""
+
+    if hasattr(response, "output_text") and getattr(response, "output_text"):
+        return str(getattr(response, "output_text")).strip()
+
+    text_chunks: list[str] = []
+
+    output = getattr(response, "output", None)
+    if output:
+        for item in output:
+            contents = getattr(item, "content", [])
+            for content in contents:
+                if getattr(content, "type", None) == "text":
+                    text = getattr(content, "text", None)
+                    if text:
+                        text_chunks.append(str(text))
+    if text_chunks:
+        return "\n".join(text_chunks).strip()
+
+    choices = getattr(response, "choices", None)
+    if choices:
+        first = choices[0] if choices else None
+        if first is not None:
+            message = getattr(first, "message", None)
+            if message is not None:
+                content = getattr(message, "content", None)
+                if isinstance(content, str):
+                    return content.strip()
+                if isinstance(content, list):
+                    texts = [str(part.get("text", "")).strip() for part in content if isinstance(part, Mapping)]
+                    texts = [text for text in texts if text]
+                    if texts:
+                        return "\n".join(texts).strip()
+    return ""
+
+
+def _extract_json_segment(text: str) -> str | None:
+    stack: list[str] = []
+    start_idx: int | None = None
+    for idx, char in enumerate(text):
+        if char in "{[":
+            if not stack:
+                start_idx = idx
+            stack.append(char)
+        elif char in "]}":
+            if not stack:
+                continue
+            opener = stack.pop()
+            if (opener == "{" and char != "}") or (opener == "[" and char != "]"):
+                stack.clear()
+                start_idx = None
+                continue
+            if not stack and start_idx is not None:
+                segment = text[start_idx : idx + 1]
+                try:
+                    json.loads(segment)
+                    return segment
+                except json.JSONDecodeError:
+                    start_idx = None
+    return None
+
+
+def _normalise_json_payload(payload: str) -> str:
+    cleaned = payload.strip()
+    if not cleaned:
+        return ""
+
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = cleaned.strip()
+
+    segment = _extract_json_segment(cleaned)
+    if segment:
+        return segment
+
+    try:
+        json.loads(cleaned)
+        return cleaned
+    except json.JSONDecodeError:
+        pass
+
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and start < end:
+        candidate = cleaned[start : end + 1]
+        try:
+            json.loads(candidate)
+            return candidate
+        except json.JSONDecodeError:
+            pass
+
+    return cleaned
+
+
 def _parse_forecast_response(payload: str) -> list[WeeklyForecastResult]:
+    payload = _normalise_json_payload(payload)
     try:
         data = json.loads(payload)
     except json.JSONDecodeError as exc:  # pragma: no cover - depends on model response
@@ -195,7 +294,7 @@ def forecast_weekly_spend(
                 )
             else:
                 raise
-        payload = getattr(response, "output_text", "")
+        payload = _extract_response_payload(response)
         if not payload:
             raise ValueError("No output from OpenAI response")
         return _parse_forecast_response(payload)

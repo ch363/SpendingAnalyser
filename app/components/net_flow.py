@@ -1,35 +1,67 @@
-"""Yearly net flow chart component."""
+"""Yearly net flow chart component (single card_html render)."""
 
 from __future__ import annotations
 
 import pandas as pd
 import plotly.express as px
-import plotly.io as pio
 import streamlit as st
 import streamlit.components.v1 as components
 
 from core.models import MonthlyFlow, NetFlowSeries
 
 
+# ---- lightweight card CSS (scoped inside iframe) ----
+_CARD_CSS = """
+<style>
+.app-card{background:#fff;border-radius:1.25rem;padding:1.5rem;border:1px solid rgba(148,163,184,.16);
+  box-shadow:0 18px 36px rgba(15,23,42,.08)}
+.app-card__header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+.pill{display:inline-flex;align-items:center;padding:.35rem .8rem;border-radius:999px;
+  background:rgba(37,99,235,.10);font-size:.72rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:#2563eb}
+.app-card__title{margin:.35rem 0 0;font-size:1.25rem;font-weight:600;color:#0f172a}
+.chart-wrap{margin-top:1rem}
+.muted{color:rgba(15,23,42,.6)}
+</style>
+"""
+
+
+def _card_html(series: NetFlowSeries, chart_html: str) -> str:
+    return _CARD_CSS + f"""
+<div class="app-card" role="region" aria-label="Yearly net flow">
+  <div class="app-card__header">
+    <div>
+      <div class="pill">{series.subtitle}</div>
+      <h3 class="app-card__title">{series.title}</h3>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    {chart_html}
+  </div>
+</div>
+"""
+
+
 def render_yearly_net_flow(series: NetFlowSeries) -> None:
-    """Render grouped bar chart of monthly inflow/outflow."""
-    # Filter out months with no inflow and no outflow so they don't appear.
+    """Render grouped bar chart of monthly inflow/outflow inside a single card_html iframe."""
+    # Filter out months with no inflow/outflow
     months_with_data = [m for m in series.months if (m.inflow != 0 or m.outflow != 0)]
 
-    # If there's no data at all, render an empty card message and return.
+    # Empty state
     if not months_with_data:
-        empty_html = f"""
-        <div class='app-card netflow-card'>
+        empty_card = _CARD_CSS + f"""
+        <div class="app-card">
           <div class="app-card__header">
             <div>
               <div class="pill">{series.subtitle}</div>
-              <h3 style="margin: 0.35rem 0 0; font-size: 1.4rem; font-weight: 600;">{series.title}</h3>
+              <h3 class="app-card__title">{series.title}</h3>
             </div>
           </div>
-          <div style='padding:1.25rem; color: var(--app-text-muted);'>No monthly net flow data available.</div>
+          <p class="muted" style="margin-top:.75rem;">No monthly net flow data available.</p>
         </div>
         """
-        components.html(empty_html, height=140, scrolling=False)
+        components.html(empty_card, height=180, scrolling=False)
         return
 
     # Build dataframe only for months that have data
@@ -42,59 +74,50 @@ def render_yearly_net_flow(series: NetFlowSeries) -> None:
     )
     df["Display"] = df["Amount"].abs()
 
-    # Map months to numeric positions so Plotly won't reserve space for missing months.
+    # Map months to numeric positions so Plotly won't reserve space for missing months
     month_order = [m.month for m in months_with_data]
     month_to_idx = {m: i for i, m in enumerate(month_order)}
     df["MonthIdx"] = df["Month"].map(month_to_idx)
 
+    # Figure
     fig = px.bar(
         df,
         x="MonthIdx",
         y="Display",
         color="Type",
         barmode="group",
-        color_discrete_map={"In": "#00ff48", "Out": "#ff0000"},
+        color_discrete_map={"In": "#00ff6a", "Out": "#ff0000"},
         text="Display",
     )
     fig.update_traces(
         texttemplate="£%{text:,.0f}",
-        hovertemplate="%{x} %{customdata[0]}: £%{customdata[1]:,.0f}<extra></extra>",
-        customdata=df[["Type", "Display"]].values,
+        hovertemplate="%{customdata[0]} · %{customdata[1]}<br>£%{y:,.0f}<extra></extra>",
+        customdata=df[["Type", "Month"]].to_numpy(),
+        cliponaxis=False,
     )
-
-    # Increase left margin so y-axis labels are visible and style axis ticks
     fig.update_layout(
-        margin=dict(l=80, r=10, t=10, b=30),
+        margin=dict(l=70, r=10, t=10, b=40),
         yaxis_title="",
         xaxis_title="",
-        legend=dict(orientation="h", y=-0.2, x=0.2),
-        yaxis=dict(showgrid=True, gridcolor="rgba(11, 26, 51, 0.08)", zerolinecolor="rgba(11,26,51,0.2)", tickfont=dict(size=12, color="rgba(11,26,51,0.8)")),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        yaxis=dict(showgrid=True, gridcolor="rgba(11,26,51,0.08)", zerolinecolor="rgba(11,26,51,0.2)"),
+    )
+    fig.update_yaxes(tickformat="£,.0f", tickfont=dict(color="rgba(15,23,42,0.85)", size=12))
+    fig.update_xaxes(
+        tickmode="array",
+        tickvals=list(month_to_idx.values()),
+        ticktext=month_order,
+        tickfont=dict(size=12),
+        showgrid=False,
     )
 
-    # Format y-axis as pounds and ensure ticks are readable
-    fig.update_yaxes(tickformat="£,.0f", tickfont=dict(color="rgba(11,26,51,0.85)", size=13), showticklabels=True)
+    # Inline the chart so a single iframe render contains everything
+    chart_html = fig.to_html(full_html=False, include_plotlyjs="inline", config={"displayModeBar": False})
 
-    # Show only the months present by placing ticks at the numeric positions
-    # and labelling them with the month names.
-    fig.update_xaxes(tickmode="array", tickvals=list(month_to_idx.values()), ticktext=month_order, tickfont=dict(size=12))
-
-    # Render header and figure HTML together inside a single Streamlit components.html call
-    plot_html = pio.to_html(fig, include_plotlyjs=True, full_html=False)
-    card_html = f"""
-    <div class='app-card netflow-card'>
-      <div class="app-card__header">
-        <div>
-          <div class="pill">{series.subtitle}</div>
-          <h3 style="margin: 0.35rem 0 0; font-size: 1.4rem; font-weight: 600;">{series.title}</h3>
-        </div>
-      </div>
-      {plot_html}
-    </div>
-    """
-
-    # Estimate height from figure layout; fallback to 420px.
-    est_height = int(fig.layout.height) if fig.layout.height is not None else 420
-    components.html(card_html, height=est_height, scrolling=False)
+    # Build and render the card in one go
+    card_html = _card_html(series, chart_html)
+    
+    components.html(card_html, height=550, scrolling=False)
 
 
 __all__ = ["MonthlyFlow", "NetFlowSeries", "render_yearly_net_flow"]

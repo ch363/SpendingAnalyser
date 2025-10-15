@@ -34,18 +34,27 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 	return dedent(
 		f"""
 		:root {{
-			--app-bg: {palette.background};
-			--app-surface: {palette.surface};
-			--app-surface-alt: {palette.surface_alt};
-			--app-primary: {palette.primary};
-			--app-primary-light: {palette.primary_light};
-			--app-accent: {palette.accent};
-			--app-border: {palette.border};
-			--app-text: {palette.text_primary};
-			--app-text-muted: {palette.text_secondary};
+			--app-bg: #f7f8fb;
+			--app-text: #0f172a;
+			--app-text-muted: #6b7280;
+			--app-blue: #2563eb;
+			--app-cyan: #38bdf8;
+			--app-orange: #f59e0b;
+			--app-green: #16a34a;
+			--app-red: #dc2626;
+			--card-bg: #ffffff;
+			--card-border: rgba(148, 163, 184, 0.18);
+			--app-surface: #ffffff;
+			--app-surface-alt: #eef2ff;
+			--app-primary: #2563eb;
+			--app-primary-light: #60a5fa;
+			--app-accent: #38bdf8;
+			--app-border: rgba(148, 163, 184, 0.18);
 			--app-success: {palette.success};
 			--app-warning: {palette.warning};
-			--card-radius: 18px;
+			--focus-ring: rgba(37, 99, 235, 0.45);
+			--card-radius: 1.5rem;
+			--font-family: "Inter", "SF Pro Display", "Segoe UI", "Helvetica Neue", sans-serif;
 		}}
 
 		body {{
@@ -56,196 +65,463 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 
 		.stApp {{
 			background: var(--app-bg);
+			color: var(--app-text);
 		}}
 
-		.app-card {{
-			background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(245,247,255,0.9));
+		button, [role="button"], input, select {{
+			font-family: inherit;
+		}}
+
+		button:focus-visible,
+		[role="button"]:focus-visible,
+		input:focus-visible,
+		select:focus-visible,
+		textarea:focus-visible {{
+			outline: 2px solid var(--focus-ring);
+			outline-offset: 2px;
+		}}
+
+		.app-shell {{
+			max-width: 1240px;
+			margin: 0 auto;
+			padding: 1.25rem 1.25rem 2rem;
+		}}
+
+		.card {{
+			background: var(--card-bg);
+			border: 1px solid var(--card-border);
 			border-radius: var(--card-radius);
-			border: 1px solid var(--app-border);
-			padding: 1.5rem;
-			box-shadow: 0 20px 35px rgba(15, 26, 51, 0.08);
+			padding: 1.6rem;
+			box-shadow: 0 25px 45px rgba(15, 23, 42, 0.07);
+			display: grid;
+			gap: 1.4rem;
 		}}
 
-		.app-card--primary {{
-			background: linear-gradient(160deg, var(--app-primary), var(--app-primary-light));
-			border: none;
-			color: white;
-			box-shadow: 0 25px 40px rgba(0, 81, 255, 0.25);
-		}}
-
-		.ai-summary-card {{
-			background: linear-gradient(165deg, var(--app-primary), var(--app-primary-light) 70%, rgba(0, 194, 255, 0.6));
-			border-radius: 24px;
-			padding: 2rem;
-			color: white;
+		.hero {{
+			background: linear-gradient(135deg, var(--app-blue), var(--app-cyan));
+			color: #ffffff;
+			padding: 1.8rem;
+			border-radius: 1.4rem;
 			position: relative;
 			overflow: hidden;
 		}}
 
-		.ai-summary-card:before {{
+		.hero::after {{
 			content: "";
 			position: absolute;
 			inset: 12px;
-			border-radius: 20px;
-			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 1.2rem;
+			border: 1px solid rgba(255, 255, 255, 0.25);
+			opacity: 0.7;
 			pointer-events: none;
 		}}
 
-		.ai-summary-card__inner {{
+		.hero__content {{
 			position: relative;
 			z-index: 1;
+			display: grid;
+			gap: 1rem;
 		}}
 
-		.ai-summary-controls {{
-			margin-bottom: 1.4rem;
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-			padding: 0.8rem 1.1rem 1.2rem;
-			background: rgba(255, 255, 255, 0.5);
-			border-radius: 18px;
-			border: 1px solid rgba(216, 225, 248, 0.7);
-			box-shadow: 0 12px 24px rgba(15, 26, 51, 0.05);
-		}}
-
-		.ai-summary-controls__row {{
-			display: flex;
-			justify-content: space-between;
+		.pill {{
+			display: inline-flex;
 			align-items: center;
+			gap: 0.4rem;
+			border-radius: 999px;
+			padding: 0.25rem 0.7rem;
+			font-weight: 600;
+			font-size: 0.8rem;
+			letter-spacing: 0.06em;
+			text-transform: uppercase;
+			background: rgba(15, 23, 42, 0.06);
+			color: var(--app-text);
 		}}
 
-		.ai-summary-controls__label {{
-			font-size: 0.78rem;
+		.badge {{
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			border-radius: 999px;
+			padding: 0.25rem 0.6rem;
+			font-size: 0.75rem;
+			font-weight: 600;
+			background: rgba(37, 99, 235, 0.1);
+			color: var(--app-blue);
+		}}
+
+		.metrics {{
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+			gap: 1rem;
+		}}
+
+		.metric-label {{
+			font-size: 0.8rem;
+			letter-spacing: 0.06em;
 			text-transform: uppercase;
-			letter-spacing: 0.08em;
 			color: var(--app-text-muted);
 		}}
 
-		.ai-summary-controls__helper {{
-			margin: 0.25rem 0 0;
+		.metric-value {{
+			font-size: 1.75rem;
+			font-weight: 700;
+			color: var(--app-text);
+		}}
+
+		.chip {{
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			border-radius: 999px;
+			padding: 0.2rem 0.6rem;
+			font-size: 0.8rem;
+			font-weight: 600;
+		}}
+
+		.chip--pos {{
+			background: rgba(22, 163, 74, 0.12);
+			color: var(--app-green);
+		}}
+
+		.chip--neg {{
+			background: rgba(220, 38, 38, 0.12);
+			color: var(--app-red);
+		}}
+
+		.status-dot {{
+			width: 0.55rem;
+			height: 0.55rem;
+			border-radius: 999px;
+			display: inline-block;
+		}}
+
+		.status--ok {{
+			background: var(--app-green);
+		}}
+
+		.status--bad {{
+			background: var(--app-orange);
+		}}
+
+		.toolbar {{
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.8rem;
+			background: var(--card-bg);
+			border: 1px solid var(--card-border);
+			border-radius: 1rem;
+			padding: 0.7rem 1rem;
+		}}
+
+		.toolbar__label {{
+			font-weight: 600;
+			color: var(--app-text);
+		}}
+
+		.toolbar__helper {{
 			font-size: 0.9rem;
 			color: var(--app-text-muted);
 		}}
 
-		.ai-summary-controls .stRadio > label {{
-			font-weight: 500;
+		.hero__heading {{
+			font-size: 2.1rem;
+			font-weight: 600;
+			margin: 0;
+		}}
+
+		.hero__body {{
+			font-size: 1rem;
+			margin: 0;
+			line-height: 1.6;
+		}}
+
+		.hero__actions {{
+			margin: 0;
+			padding-left: 1.2rem;
+			display: grid;
+			gap: 0.4rem;
+			font-size: 0.95rem;
+			list-style: disc;
+		}}
+
+		.hero__actions li {{
+			margin: 0;
+			color: inherit;
+		}}
+
+		.section-title {{
+			margin: 0;
+			font-size: 1.6rem;
+			font-weight: 600;
 			color: var(--app-text);
 		}}
 
-		.ai-summary-controls .stRadio div[role="radiogroup"] {{
-			gap: 1.25rem;
+		.page-subtitle {{
+			margin: 0.35rem 0 0;
+			font-size: 1rem;
+			color: var(--app-text-muted);
 		}}
 
-		.ai-summary-controls .stRadio div[role="radiogroup"] > label {{
-			background: rgba(0, 81, 255, 0.08);
-			padding: 0.45rem 0.9rem;
-			border-radius: 999px;
-			border: 1px solid transparent;
+		.page-meta {{
+			margin-top: 0.75rem;
+			font-size: 0.95rem;
+			color: var(--app-text-muted);
+			font-weight: 500;
 		}}
 
-		.ai-summary-controls .stRadio div[role="radiogroup"] > label[data-checked="true"] {{
-			background: var(--app-primary);
-			color: white;
-			border-color: rgba(0, 81, 255, 0.4);
-			font-weight: 600;
-			box-shadow: 0 10px 18px rgba(0, 81, 255, 0.2);
-		}}
-
-		.ai-summary-card__header {{
-			display: flex;
-			flex-direction: column;
-			gap: 0.6rem;
-		}}
-
-		.ai-summary-card__label {{
-			display: inline-flex;
-			background: rgba(255, 255, 255, 0.16);
-			padding: 0.35rem 0.9rem;
-			border-radius: 999px;
-			font-size: 0.75rem;
-			letter-spacing: 0.08em;
-			text-transform: uppercase;
-			width: fit-content;
-		}}
-
-		.ai-summary-card__headline {{
-			margin-top: 1.8rem;
-			font-size: 1.8rem;
-			font-weight: 600;
-		}}
-
-		.ai-summary-card ul {{
-			margin: 1.1rem 0 0 1.2rem;
-			line-height: 1.6;
-			opacity: 0.95;
+		.input-helper {{
+			margin: 0.4rem 0 0;
+			font-size: 0.85rem;
+			color: var(--app-text-muted);
 		}}
 
 		.snapshot-card {{
-			background: white;
-			border-radius: 24px;
-			padding: 1.8rem;
-			box-shadow: 0 20px 35px rgba(15, 26, 51, 0.08);
-			border: 1px solid rgba(216, 225, 248, 0.8);
 			display: grid;
-			gap: 1.6rem;
+			gap: 1.8rem;
+		}}
+
+		.snapshot-card--modern {{
+			gap: 2rem;
 		}}
 
 		.snapshot-card__header {{
 			display: flex;
+			align-items: flex-start;
 			justify-content: space-between;
-			align-items: center;
+			gap: 1.5rem;
+		}}
+
+		.snapshot-card__period {{
+			display: inline-block;
+			font-size: 0.85rem;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+			font-weight: 600;
+			color: rgba(15, 23, 42, 0.6);
+		}}
+
+		.snapshot-card__title {{
+			margin: 0.5rem 0 0;
+			font-size: 2.15rem;
+			font-weight: 700;
+			color: var(--app-text);
 		}}
 
 		.snapshot-card__badge {{
-			background: rgba(60, 121, 255, 0.12);
-			color: var(--app-primary);
-			padding: 0.35rem 0.8rem;
-			border-radius: 999px;
-			font-size: 0.78rem;
-			font-weight: 600;
+			background: rgba(37, 99, 235, 0.14);
+			color: var(--app-blue);
 		}}
 
 		.snapshot-card__primary {{
-			display: flex;
-			justify-content: space-between;
-			align-items: flex-end;
-		}}
-
-		.snapshot-card__primary-value {{
-			font-size: 2.4rem;
-			font-weight: 600;
-		}}
-
-		.snapshot-card__primary-delta {{
-			font-size: 0.95rem;
-			font-weight: 500;
-			margin-top: 0.35rem;
-		}}
-
-		.snapshot-grid {{
 			display: grid;
-			gap: 1.2rem;
-			grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+			gap: 0.75rem;
 		}}
 
-		.snapshot-metric__label {{
-			font-size: 0.85rem;
+		.snapshot-card__overline {{
+			font-size: 0.78rem;
+			letter-spacing: 0.14em;
 			text-transform: uppercase;
-			letter-spacing: 0.08em;
+			font-weight: 600;
 			color: var(--app-text-muted);
 		}}
 
-		.snapshot-metric__value {{
-			margin-top: 0.45rem;
-			font-size: 1.3rem;
+		.snapshot-card__value-row {{
+			display: flex;
+			align-items: baseline;
+			gap: 1.15rem;
+			flex-wrap: wrap;
+		}}
+
+		.snapshot-card__value {{
+			font-size: 2.6rem;
+			font-weight: 700;
+			color: var(--app-text);
+		}}
+
+		.snapshot-card__delta,
+		.snapshot-card__metric-delta {{
+			font-size: 1rem;
+			font-weight: 600;
+		}}
+
+		.snapshot-card__delta--pos,
+		.snapshot-card__metric-delta--pos {{
+			color: var(--app-green);
+		}}
+
+		.snapshot-card__delta--neg,
+		.snapshot-card__metric-delta--neg {{
+			color: var(--app-orange);
+		}}
+
+		.snapshot-card__grid {{
+			display: grid;
+			gap: 1.4rem 2.1rem;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		}}
+
+		.snapshot-card__metric {{
+			display: grid;
+			gap: 0.35rem;
+		}}
+
+		.snapshot-card__metric-label {{
+			font-size: 0.8rem;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			font-weight: 600;
+			color: var(--app-text-muted);
+		}}
+
+		.snapshot-card__metric-value {{
+			font-size: 1.35rem;
 			font-weight: 600;
 			color: var(--app-text);
 		}}
 
-		.snapshot-metric__delta {{
-			margin-top: 0.2rem;
+		.snapshot-card__metric-delta {{
+			font-size: 0.95rem;
+			color: var(--app-text-muted);
+		}}
+
+		.budget-card__header {{
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 1.5rem;
+		}}
+
+		.budget-card__status {{
+			display: inline-flex;
+			align-items: center;
+			gap: 0.55rem;
+			font-weight: 600;
+			color: var(--app-text);
+		}}
+
+		.budget-card__status-label {{
+			font-size: 0.95rem;
+		}}
+
+		.budget-card__metrics {{
+			gap: 1.2rem;
+		}}
+
+		.budget-card__control {{
+			display: flex;
+			flex-direction: column;
+			gap: 0.35rem;
+		}}
+
+		.budget-card__control-title {{
+			font-size: 0.78rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			font-weight: 600;
+			color: var(--app-text-muted);
+		}}
+
+		.budget-card__control-helper {{
+			margin: 0;
+			font-size: 0.92rem;
+			color: var(--app-text-muted);
+		}}
+
+		.budget-card__footer {{
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-weight: 600;
+			color: var(--app-text);
+		}}
+
+		.budget-progress {{
+			display: grid;
+			gap: 0.65rem;
+		}}
+
+		.progress {{
+			position: relative;
+			height: 0.55rem;
+			border-radius: 999px;
+			background: rgba(148, 163, 184, 0.22);
+			overflow: hidden;
+		}}
+
+		.progress__fill {{
+			height: 100%;
+			background: linear-gradient(90deg, var(--app-blue), var(--app-cyan));
+			border-radius: inherit;
+		}}
+
+		.progress__legend {{
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-size: 0.85rem;
+			color: var(--app-text-muted);
+		}}
+
+		.progress__note {{
+			margin: 0;
 			font-size: 0.9rem;
-			font-weight: 500;
+			color: var(--app-text-muted);
+		}}
+
+		.layout-gap {{
+			height: 1.6rem;
+		}}
+
+		div[data-testid="stNumberInput"] > label {{
+			font-size: 0.78rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			font-weight: 600;
+			color: var(--app-text-muted);
+			margin-bottom: 0.35rem;
+		}}
+
+		div[data-testid="stNumberInput"] input {{
+			border-radius: 0.85rem;
+			border: 1px solid rgba(148, 163, 184, 0.4);
+			padding: 0.55rem 0.8rem;
+			font-weight: 600;
+			color: var(--app-text);
+			background: rgba(255, 255, 255, 0.9);
+		}}
+
+		div[data-testid="stDateInput"] > label {{
+			font-weight: 600;
+			font-size: 0.78rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--app-text-muted);
+			margin-bottom: 0.4rem;
+		}}
+
+		div[data-testid="stDateInput"] input {{
+			border-radius: 0.85rem;
+			border: 1px solid rgba(148, 163, 184, 0.4);
+			padding: 0.5rem 0.75rem;
+			font-weight: 600;
+			color: var(--app-text);
+		}}
+
+		div[data-testid="stSelectbox"] > label {{
+			font-weight: 600;
+			font-size: 0.78rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--app-text-muted);
+			margin-bottom: 0.35rem;
+		}}
+
+		div[data-testid="stSelectbox"] [data-baseweb="select"] {{
+			border-radius: 0.85rem;
+			border: 1px solid rgba(148, 163, 184, 0.4);
+			background: rgba(255, 255, 255, 0.9);
+			box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 		}}
 
 		.stat-list {{

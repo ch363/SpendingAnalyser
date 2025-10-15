@@ -1,7 +1,9 @@
-"""Monthly spend snapshot component."""
+"""Monthly snapshot card built with shared card and metrics utility classes."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+from html import escape
 from textwrap import dedent
 
 import streamlit as st
@@ -9,82 +11,105 @@ import streamlit as st
 from core.models import MonthlySnapshot, SnapshotMetric
 
 
-def render_monthly_snapshot(snapshot: MonthlySnapshot) -> None:
-    """Render the monthly snapshot metrics card."""
-
-    with st.container():
-        primary_metric = snapshot.metrics[0] if snapshot.metrics else None
-        residual_metrics = snapshot.metrics[1:] if len(snapshot.metrics) > 1 else []
-
-        header_html = dedent(
-            f"""
-            <div class="snapshot-card__header">
-                <div>
-                    <div class="pill">{snapshot.period_label}</div>
-                    <h3 style="margin: 0.35rem 0 0; font-size: 1.5rem; font-weight: 600;">{snapshot.title}</h3>
-                </div>
-                <span class="snapshot-card__badge">Normal for you</span>
-            </div>
-            """
-        ).strip()
-
-        if primary_metric:
-            if primary_metric.delta:
-                tone = "var(--app-success)" if primary_metric.is_positive else "var(--app-warning)"
-                delta_html = (
-                    f"<div class='snapshot-card__primary-delta' style='color: {tone};'>{primary_metric.delta}</div>"
+def _as_snapshot(snapshot: MonthlySnapshot | Mapping[str, object]) -> MonthlySnapshot:
+    if isinstance(snapshot, MonthlySnapshot):
+        return snapshot
+    if not isinstance(snapshot, Mapping):
+        raise TypeError("Snapshot must be a MonthlySnapshot or mapping")
+    metrics_raw = snapshot.get("metrics", ())
+    metrics: list[SnapshotMetric] = []
+    if isinstance(metrics_raw, Sequence):
+        for item in metrics_raw:
+            if isinstance(item, SnapshotMetric):
+                metrics.append(item)
+            elif isinstance(item, Mapping):
+                metrics.append(
+                    SnapshotMetric(
+                        label=str(item.get("label", "")),
+                        value=str(item.get("value", "")),
+                        delta=str(item.get("delta")) if item.get("delta") is not None else None,
+                        is_positive=item.get("is_positive"),
+                    )
                 )
-            else:
-                delta_html = ""
+    return MonthlySnapshot(
+        title=str(snapshot.get("title", "Monthly snapshot")),
+        period_label=str(snapshot.get("period_label", "This period")),
+        metrics=tuple(metrics),
+    )
 
-            primary_html = dedent(
-                f"""
-                <div class='snapshot-card__primary'>
-                    <div>
-                        <div class='snapshot-metric__label'>{primary_metric.label}</div>
-                        <div class='snapshot-card__primary-value'>{primary_metric.value}</div>
-                    </div>
-                    {delta_html}
-                </div>
-                """
-            ).strip()
-        else:
-            primary_html = ""
 
-        residual_blocks: list[str] = []
-        for metric in residual_metrics:
-            if metric.delta:
-                tone = "var(--app-success)" if metric.is_positive else "var(--app-warning)"
-                delta_html = f"<div class='snapshot-metric__delta' style='color: {tone};'>{metric.delta}</div>"
-            else:
-                delta_html = ""
-            residual_blocks.append(
-                dedent(
-                    f"""
-                    <div>
-                        <div class='snapshot-metric__label'>{metric.label}</div>
-                        <div class='snapshot-metric__value'>{metric.value}</div>
-                        {delta_html}
-                    </div>
-                    """
-                ).strip()
-            )
+def render_snapshot_card(snapshot: MonthlySnapshot | Mapping[str, object]) -> None:
+    """Render the monthly snapshot metrics inside a single `.card` container."""
 
-        residual_html = (
-            f"<div class='snapshot-grid'>{''.join(residual_blocks)}</div>" if residual_blocks else ""
+    resolved = _as_snapshot(snapshot)
+    metrics = list(resolved.metrics)
+
+    def _delta_html(metric: SnapshotMetric, base_class: str) -> str:
+        if not metric.delta:
+            return ""
+        tone = "pos" if bool(getattr(metric, "is_positive", False)) else "neg"
+        return (
+            f'<span class="{base_class} {base_class}--{tone}">{escape(str(metric.delta))}</span>'
         )
 
-        card_html = dedent(
-            f"""
-            <div class='snapshot-card'>
-                {header_html}
-                {primary_html}
-                {residual_html}
-            </div>
-            """
-        ).strip()
+    primary_metric: SnapshotMetric | None = metrics[0] if metrics else None
+    supporting_metrics = metrics[1:] if len(metrics) > 1 else []
 
-        st.markdown(card_html, unsafe_allow_html=True)
+    primary_html = ""
+    if primary_metric:
+        primary_html = dedent(
+            f"""\
+<div class="snapshot-card__primary">
+  <span class="snapshot-card__overline">{escape(primary_metric.label)}</span>
+  <div class="snapshot-card__value-row">
+    <span class="snapshot-card__value">{escape(primary_metric.value)}</span>
+    {_delta_html(primary_metric, "snapshot-card__delta")}
+  </div>
+</div>
+"""
+        )
+
+    secondary_blocks: list[str] = []
+    for metric in supporting_metrics:
+        secondary_blocks.append(
+            dedent(
+                f"""\
+<div class="snapshot-card__metric">
+  <span class="snapshot-card__metric-label">{escape(metric.label)}</span>
+  <span class="snapshot-card__metric-value">{escape(metric.value)}</span>
+  {_delta_html(metric, "snapshot-card__metric-delta")}
+</div>
+"""
+            )
+        )
+    secondary_html = (
+        f"<div class=\"snapshot-card__grid\">{''.join(secondary_blocks)}</div>"
+        if secondary_blocks
+        else ""
+    )
+
+    header_html = dedent(
+        f"""\
+<header class="snapshot-card__header">
+  <div>
+    <span class="snapshot-card__period">{escape(resolved.period_label)}</span>
+    <h2 class="snapshot-card__title">{escape(resolved.title)}</h2>
+  </div>
+  <span class="badge snapshot-card__badge" aria-label="Compared to your history">Normal for you</span>
+</header>
+"""
+    )
+
+    card_html = dedent(
+        f"""\
+<section class="card snapshot-card snapshot-card--modern" role="region" aria-label="Monthly snapshot">
+  {header_html}
+  {primary_html}
+  {secondary_html}
+</section>
+"""
+    )
+    st.markdown(card_html, unsafe_allow_html=True)
 
 
-__all__ = ["SnapshotMetric", "MonthlySnapshot", "render_monthly_snapshot"]
+__all__ = ["render_snapshot_card"]
