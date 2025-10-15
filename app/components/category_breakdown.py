@@ -97,14 +97,15 @@ def _card_html(summary: CategorySummary, selected_name: str,
       {cat_chart_html}
     </div>
     <div class="chart-wrap">
+    <div class="category-card__top-merchant">
+    <span>Top merchants this month</span>
+    <p>{top_html}</p>
+    </div>
       {vend_chart_html}
     </div>
   </div>
 
-  <div class="category-card__top-merchant">
-    <span>Top merchants this month</span>
-    <p>{top_html}</p>
-  </div>
+  
 </section>
 """
 

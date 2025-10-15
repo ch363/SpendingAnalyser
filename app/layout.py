@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
+import calendar
 from textwrap import dedent
 from typing import Any
 
@@ -44,6 +45,38 @@ def _format_range_label(start: date, end: date) -> str:
     if start.year == end.year:
         return f"{start.strftime('%b %Y')} – {end.strftime('%b %Y')}"
     return f"{start.strftime('%b %Y')} – {end.strftime('%b %Y')}"
+
+
+def _month_bounds(d: date) -> tuple[date, date]:
+    """Return the first and last day for the month containing ``d``."""
+    start = d.replace(day=1)
+    days_in_month = calendar.monthrange(d.year, d.month)[1]
+    end = d.replace(day=days_in_month)
+    return start, end
+
+
+def _last_month_bounds(today: date) -> tuple[date, date]:
+    """Return first/last dates for the previous calendar month relative to ``today``."""
+    first_this, _ = _month_bounds(today)
+    last_prev = first_this - timedelta(days=1)
+    return _month_bounds(last_prev)
+
+
+def _days_complete_text(start: date, end: date) -> tuple[str, bool, int]:
+    """Return human text for days complete and whether it's a partial month.
+
+    Returns: (text, is_partial_month, observed_days)
+    """
+    if start.year == end.year and start.month == end.month:
+        dim = calendar.monthrange(start.year, start.month)[1]
+        observed = (end - start).days + 1
+        if start.day == 1 and end.day < dim:
+            return f"{observed} of {dim} days complete.", True, observed
+        if start.day == 1 and end.day == dim:
+            return f"{dim} of {dim} days complete.", False, observed
+        return f"{observed} days selected.", True, observed
+    observed = (end - start).days + 1
+    return f"{observed} days selected.", True, observed
 
 
 def _resolve_focus(
@@ -102,23 +135,52 @@ def render_dashboard(
     max_allowed = max(date.today(), default_date_range[1])
 
     with header_right:
-        selection = st.date_input(
-            "Reporting period",
-            value=default_date_range,
-            min_value=min_allowed,
-            max_value=max_allowed,
-            key="dashboard_period_selector",
-        )
-        st.markdown(
-            "<p class='input-helper'>Choose a month or define a custom date range.</p>",
-            unsafe_allow_html=True,
+        # Period chips
+        period_mode = st.segmented_control(
+            "Period",
+            options=["This month", "Last month", "Custom"],
+            key="dashboard_period_mode",
         )
 
-    start_date, end_date = _coerce_date_range(selection)
+        selection: Any
+        if period_mode == "Custom":
+            selection = st.date_input(
+                "Reporting period",
+                value=default_date_range,
+                min_value=min_allowed,
+                max_value=max_allowed,
+                key="dashboard_period_selector",
+            )
+            st.markdown(
+                "<p class='input-helper'>Pick any dates. For monthly clarity, choose the 1st to the last day.</p>",
+                unsafe_allow_html=True,
+            )
+            start_date, end_date = _coerce_date_range(selection)
+        elif period_mode == "Last month":
+            start_date, end_date = _last_month_bounds(date.today())
+            st.markdown(
+                "<p class='input-helper'>Showing the complete previous calendar month.</p>",
+                unsafe_allow_html=True,
+            )
+        else:  # This month
+            m_start, m_end = _month_bounds(date.today())
+            start_date, end_date = m_start, min(m_end, date.today())
+            st.markdown(
+                "<p class='input-helper'>This month to date.</p>",
+                unsafe_allow_html=True,
+            )
+
     range_label = _format_range_label(start_date, end_date)
+    days_text, is_partial, observed_days = _days_complete_text(start_date, end_date)
+
+    proj_text = (
+        f"<br/>Projections are based on the first {observed_days} days of data."
+        if is_partial
+        else ""
+    )
 
     st.markdown(
-        f"<div class='page-meta'>Viewing: {range_label}</div>",
+        f"<div class='page-meta'>Viewing: {range_label}<br/>{days_text}{proj_text}</div>",
         unsafe_allow_html=True,
     )
 
