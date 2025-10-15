@@ -46,8 +46,7 @@ def _progress_block(spend: float, budget: float) -> str:
             <div class="progress__fill" style="width: {fill:.2f}%;"></div>
           </div>
           <div class="progress__legend">
-            <span>{_format_currency(spend)} spent</span>
-            <span>{_format_currency(max(budget, 0))} budget</span>
+            <span>{_format_currency(spend)} vs {_format_currency(max(budget, 0))}</span>
           </div>
           <p class="progress__note">{note}</p>
         </div>
@@ -56,15 +55,45 @@ def _progress_block(spend: float, budget: float) -> str:
 
 
 def _budget_card_html(tracker: BudgetTracker, budget_value: float) -> str:
-    status_label = "Under budget" if tracker.is_under_budget else "Over budget"
-    status_dot = "status-dot status--ok" if tracker.is_under_budget else "status-dot status--bad"
-    spend_label = "Actual spend" if tracker.is_month_complete else "Projected spend"
-    savings_label = "Savings" if tracker.is_month_complete else "Projected savings"
+    # Use the user-chosen budget value for all calculations to keep the UI consistent
+    budget = float(max(budget_value, 0.0))
 
-    variance_text = _format_variance(
-        tracker.variance_percent, is_under_budget=tracker.is_under_budget
-    )
-    variance_chip, variance_class = _chip_text(variance_text, tracker.is_under_budget)
+    current_spend = float(tracker.current_spend)
+    projected_spend = float(tracker.projected_or_actual_spend)
+
+    # Status is based on projected position vs chosen budget
+    projected_is_under = projected_spend <= budget if budget > 0 else False
+    status_label = "Under budget" if projected_is_under else "Over budget"
+    status_dot = "status-dot status--ok" if projected_is_under else "status-dot status--bad"
+
+    spend_label = "Actual spend" if tracker.is_month_complete else "Projected spend"
+
+    # Savings/overspend wording – avoid showing negative savings
+    savings_amount = budget - projected_spend
+    if tracker.is_month_complete:
+        savings_label = "Savings" if savings_amount >= 0 else "Overspend"
+    else:
+        savings_label = "Projected savings" if savings_amount >= 0 else "Projected overspend"
+
+    # Variance percentages vs chosen budget (guard divide by zero)
+    if budget > 0:
+        proj_var_pct = ((projected_spend - budget) / budget) * 100.0
+        proj_var_text = _format_variance(proj_var_pct, is_under_budget=projected_is_under)
+
+        actual_is_under = current_spend <= budget
+        actual_var_pct = ((current_spend - budget) / budget) * 100.0
+        actual_var_text = _format_variance(actual_var_pct, is_under_budget=actual_is_under)
+
+        # Build chip content/classes for colored badges
+        actual_chip_text, actual_chip_class = _chip_text(actual_var_text, actual_is_under)
+        proj_chip_text, proj_chip_class = _chip_text(proj_var_text, projected_is_under)
+    else:
+        proj_var_text = "—"
+        actual_var_text = "—"
+        actual_chip_text = actual_var_text
+        proj_chip_text = proj_var_text
+        actual_chip_class = "chip"
+        proj_chip_class = "chip"
 
     header_html = dedent(
         f"""
@@ -86,20 +115,23 @@ def _budget_card_html(tracker: BudgetTracker, budget_value: float) -> str:
         <div class="metrics budget-card__metrics">
           <div class="metric-block">
             <span class="metric-label">Current spend</span>
-            <span class="metric-value">{_format_currency(tracker.current_spend)}</span>
+            <span class="metric-value">{_format_currency(current_spend)}</span>
           </div>
           <div class="metric-block">
             <span class="metric-label">{escape(spend_label)}</span>
-            <span class="metric-value">{_format_currency(tracker.projected_or_actual_spend)}</span>
+            <span class="metric-value">{_format_currency(projected_spend)}</span>
           </div>
           <div class="metric-block">
             <span class="metric-label">{escape(savings_label)}</span>
-            <span class="metric-value">{_format_currency(tracker.savings_projection)}</span>
+            <span class="metric-value">{_format_currency(abs(savings_amount))}</span>
           </div>
           <div class="metric-block">
-            <span class="metric-label">% vs budget</span>
-            <span class="metric-value">{variance_text}</span>
-            <span class="{variance_class}">{variance_chip}</span>
+            <span class="metric-label">Actual vs budget</span>
+            <span class="metric-value"><span class="{actual_chip_class}">{actual_chip_text}</span></span>
+          </div>
+          <div class="metric-block">
+            <span class="metric-label">Projected vs budget</span>
+            <span class="metric-value"><span class="{proj_chip_class}">{proj_chip_text}</span></span>
           </div>
         </div>
         """
@@ -153,7 +185,6 @@ def render_budget_tracker(tracker: BudgetTracker) -> float:
     chosen = st.number_input(
         "Monthly budget",
         min_value=0.0,
-        value=float(st.session_state[budget_key]),
         step=50.0,
         format="%.0f",
         key=budget_key,
