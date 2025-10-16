@@ -58,6 +58,9 @@ class MonthlySnapshot:
     title: str
     period_label: str
     metrics: Tuple[SnapshotMetric, ...]
+    # Optional baseline classification and explanation for the header badge
+    baseline_label: str | None = None
+    baseline_tooltip: str | None = None
 
 
 @dataclass(frozen=True)

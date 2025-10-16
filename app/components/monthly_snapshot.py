@@ -35,6 +35,8 @@ def _as_snapshot(snapshot: MonthlySnapshot | Mapping[str, object]) -> MonthlySna
         title=str(snapshot.get("title", "Monthly snapshot")),
         period_label=str(snapshot.get("period_label", "This period")),
         metrics=tuple(metrics),
+        baseline_label=str(snapshot.get("baseline_label")) if snapshot.get("baseline_label") is not None else None,
+        baseline_tooltip=str(snapshot.get("baseline_tooltip")) if snapshot.get("baseline_tooltip") is not None else None,
     )
 
 
@@ -88,6 +90,10 @@ def render_snapshot_card(snapshot: MonthlySnapshot | Mapping[str, object]) -> No
         else ""
     )
 
+    # Safely handle older MonthlySnapshot instances that may not have the new fields
+    baseline_label = getattr(resolved, "baseline_label", None)
+    baseline_tooltip = getattr(resolved, "baseline_tooltip", None)
+
     header_html = dedent(
         f"""\
 <header class="snapshot-card__header">
@@ -95,7 +101,7 @@ def render_snapshot_card(snapshot: MonthlySnapshot | Mapping[str, object]) -> No
     <span class="snapshot-card__period">{escape(resolved.period_label)}</span>
     <h2 class="snapshot-card__title">{escape(resolved.title)}</h2>
   </div>
-  <span class="badge snapshot-card__badge" aria-label="Compared to your history">Normal for you</span>
+  <span class="badge snapshot-card__badge" aria-label="Compared to your history" title="{escape(baseline_tooltip or 'Median daily spend over last 90 days, excluding rent & other fixed charges')}">{escape(baseline_label or 'Normal for you')}</span>
 </header>
 """
     )

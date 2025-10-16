@@ -63,7 +63,7 @@ def render_weekly_spend(series: WeeklySpendSeries) -> None:
         {
             "Week": [p.week_label for p in series.points],
             "Spend": [p.amount for p in series.points],
-            "Type": ["Forecast" if p.is_forecast else "Actual" for p in series.points],
+            "Type": ["AI Forecast" if p.is_forecast else "Actual" for p in series.points],
             "Confidence": [p.confidence for p in series.points],
         }
     )

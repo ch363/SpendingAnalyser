@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import re
 from typing import Iterable
 
 import pandas as pd
@@ -21,6 +22,9 @@ def _normalise_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 	frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
 	if "is_refund" not in frame.columns:
 		frame["is_refund"] = False
+	# Ensure category column exists for downstream grouping
+	if "category" not in frame.columns:
+		frame["category"] = "uncategorised"
 	return frame
 
 
@@ -66,6 +70,31 @@ def _build_merchant_breakdown(category_frame: pd.DataFrame) -> tuple[MerchantSpe
 
 def _group_by_category(frame: pd.DataFrame) -> pd.Series:
 	return frame.groupby("category", dropna=False)["spend"].sum()
+
+
+def _normalise_category_name(value: object) -> str:
+	"""Clean raw category strings to a consistent display label.
+
+	Rules:
+	- Treat None/NaN/empty as empty string (handled upstream as Uncategorised)
+	- Replace underscores and non-alphanumeric groups with a single space
+	- Collapse multiple spaces
+	- Lowercase then Title Case for human-friendly labels
+	- Special-case 'uncategorised/uncategorized' -> 'Uncategorised'
+	"""
+	if value is None:
+		return ""
+	s = str(value)
+	if not s or s.strip().lower() in {"nan", "none"}:
+		return ""
+	# Replace any run of non-alphanumerics with a space (handles underscores and odd spacing)
+	s = re.sub(r"[^A-Za-z0-9]+", " ", s)
+	s = re.sub(r"\s+", " ", s).strip().lower()
+	if not s:
+		return ""
+	if s in {"uncategorised", "uncategorized"}:
+		return "Uncategorised"
+	return s.title()
 
 
 def build_category_summary(
@@ -118,8 +147,12 @@ def build_category_summary(
 			categories=(),
 		)
 
-	current_totals = _group_by_category(current)
-	previous_totals = _group_by_category(previous)
+	# Build normalised category labels for consistent grouping and display
+	current["category_norm"] = current["category"].apply(_normalise_category_name)
+	previous["category_norm"] = previous["category"].apply(_normalise_category_name)
+
+	current_totals = current.groupby("category_norm", dropna=False)["spend"].sum()
+	previous_totals = previous.groupby("category_norm", dropna=False)["spend"].sum()
 
 	categories: list[CategorySpend] = []
 	for category_name, amount in current_totals.sort_values(ascending=False).items():
@@ -128,10 +161,11 @@ def build_category_summary(
 		change_amount = amount_value - previous_amount
 		change_pct = _safe_ratio(change_amount, previous_amount) if previous_amount else 0.0
 
-		merchants = _build_merchant_breakdown(current[current["category"] == category_name])
+		# Merchant breakdown uses the same normalized label filter
+		merchants = _build_merchant_breakdown(current[current["category_norm"] == category_name])
 
 		name_str = "" if category_name is None else str(category_name)
-		if not name_str or name_str.strip().lower() == "nan":
+		if not name_str:
 			label = "Uncategorised"
 		else:
 			label = name_str

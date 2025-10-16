@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Any, Callable, TypeVar
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components  # for one-shot HTML render
@@ -110,6 +110,26 @@ def _card_html(summary: CategorySummary, selected_name: str,
 """
 
 # ---------- main render ----------
+"""Render category breakdown inside a Streamlit fragment to avoid whole-page reruns.
+
+When the category selectbox changes, only this fragment re-executes, so the rest of
+the dashboard doesn't visibly refresh.
+"""
+
+T = TypeVar("T", bound=Callable[..., Any])
+
+# Prefer stable st.fragment on newer Streamlit; fall back to experimental for older versions
+try:
+  fragment_decorator: Callable[[T], T] = getattr(st, "fragment")  # type: ignore[assignment]
+except AttributeError:
+  try:
+    fragment_decorator = getattr(st, "experimental_fragment")  # type: ignore[assignment]
+  except AttributeError:
+    def fragment_decorator(func: T) -> T:  # type: ignore[misc]
+      return func
+
+
+@fragment_decorator
 def render_category_breakdown(summary: CategorySummary) -> str:
     """Selector above-right. One card_html render; donut + bars inside the card."""
     if not summary.categories:

@@ -140,7 +140,9 @@ def _upcoming_week_requests(
     requests: list[WeeklyForecastRequest] = []
     for period_key in periods:
         period = period_key if isinstance(period_key, pd.Period) else pd.Period(str(period_key), freq="W-SUN")
-        if observed_cutoff is not None and period <= observed_cutoff:
+        # If we're currently mid-week, include this week in forecasts.
+        # Only skip weeks strictly before the observed cutoff.
+        if observed_cutoff is not None and period < observed_cutoff:
             continue
 
         start = period.start_time
@@ -156,6 +158,34 @@ def _upcoming_week_requests(
             )
         )
     return requests
+
+
+def _format_week_label(period: pd.Period) -> str:
+    """Format a W-SUN weekly period as a compact calendar range label.
+
+    Examples:
+    - Same month: 1–7 Oct
+    - Cross month: 29 Sep–5 Oct
+    - Cross year: 29 Dec 24–4 Jan 25
+    """
+    # Ensure we have a Period with weekly frequency
+    week = period if isinstance(period, pd.Period) else pd.Period(str(period), freq="W-SUN")
+    start = week.start_time.normalize()
+    end = week.end_time.normalize()
+
+    def _day_no_leading_zero(ts: pd.Timestamp) -> str:
+        # Use platform-friendly no-leading-zero day; %-d not on Windows. Fallback strips leading 0.
+        s = ts.strftime("%d")
+        return s.lstrip("0") or "0"
+
+    if start.year == end.year and start.month == end.month:
+        # 1–7 Oct
+        return f"{_day_no_leading_zero(start)}–{_day_no_leading_zero(end)} {end.strftime('%b')}"
+    else:
+        # 29 Sep–5 Oct (or include short years if different years)
+        if start.year != end.year:
+            return f"{_day_no_leading_zero(start)} {start.strftime('%b %y')}–{_day_no_leading_zero(end)} {end.strftime('%b %y')}"
+        return f"{_day_no_leading_zero(start)} {start.strftime('%b')}–{_day_no_leading_zero(end)} {end.strftime('%b')}"
 
 
 def build_weekly_spend_series(
@@ -174,14 +204,31 @@ def build_weekly_spend_series(
     if end_ts < start_ts:
         start_ts, end_ts = end_ts, start_ts
 
-    weekly_periods = pd.period_range(start=start_ts.to_period("W-SUN"), end=end_ts.to_period("W-SUN"), freq="W-SUN")
+    # Build weekly periods. If the selection falls within a single calendar month,
+    # extend the range to cover the full month so we can forecast remaining weeks
+    # (e.g., show Weeks 3 & 4 even when viewing month-to-date).
+    same_month = start_ts.month == end_ts.month and start_ts.year == end_ts.year
+    if same_month:
+        month_period = start_ts.to_period("M")
+        month_start = month_period.start_time
+        month_end = month_period.end_time
+        weekly_periods = pd.period_range(
+            start=month_start.to_period("W-SUN"),
+            end=month_end.to_period("W-SUN"),
+            freq="W-SUN",
+        )
+        recurring_ref_date = month_end.date()
+    else:
+        weekly_periods = pd.period_range(start=start_ts.to_period("W-SUN"), end=end_ts.to_period("W-SUN"), freq="W-SUN")
+        recurring_ref_date = end_ts.date()
     week_index_map: dict[pd.Period, int] = {}
     for idx, period_key in enumerate(weekly_periods, start=1):
         period = period_key if isinstance(period_key, pd.Period) else pd.Period(str(period_key), freq="W-SUN")
         week_index_map[period] = idx
-    recurring_entries = _build_recurring_entries(frame, reference_date=end_ts.date())
+    recurring_entries = _build_recurring_entries(frame, reference_date=recurring_ref_date)
 
     expenses = frame[(frame["amount"] < 0) & (~frame["is_refund"])].copy()
+    # Actuals still respect the selected window; forecasts fill in remaining month weeks
     expenses = expenses[(expenses["date"] >= start_ts) & (expenses["date"] <= end_ts)]
 
     latest_observed_date = expenses["date"].max() if not expenses.empty else None
@@ -243,7 +290,7 @@ def build_weekly_spend_series(
         month_key = (start.year, start.month)
         month_counters[month_key] = month_counters.get(month_key, 0) + 1
         week_idx = week_index_map.get(period, month_counters[month_key])
-        week_label = f"Week {week_idx}"
+        week_label = _format_week_label(period)
 
         week_complete = (
             observed_cutoff_date is not None and period.end_time.normalize() <= observed_cutoff_date
@@ -603,6 +650,7 @@ def build_dashboard_context(
     *,
     start_date: date,
     end_date: date,
+    api_key: str | None = None,
 ) -> DashboardContext:
     frame = _ensure_frame(transactions)
 
@@ -634,6 +682,7 @@ def build_dashboard_context(
         frame,
         start_date=start_date,
         end_date=end_date,
+        api_key=api_key,
     )
     net_flow = build_net_flow_series(frame, reference_date=end_date)
 

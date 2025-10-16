@@ -184,11 +184,13 @@ def render_dashboard(
         unsafe_allow_html=True,
     )
 
-    context: DashboardContext = build_dashboard_context(
-        transactions,
-        start_date=start_date,
-        end_date=end_date,
-    )
+    # Show a simple loading indicator while AI insights (and related forecasts) are generated
+    with st.spinner("Generating AI insights…"):
+        context: DashboardContext = build_dashboard_context(
+            transactions,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
     st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
 
