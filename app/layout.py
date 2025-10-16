@@ -12,7 +12,8 @@ import streamlit as st
 
 from app.components import (
     render_ai_summary_card,
-    render_budget_tracker,
+    render_budget_controls,
+    render_budget_spend_insights,
     render_category_breakdown,
     render_recurring_charges,
     render_snapshot_card,
@@ -22,6 +23,7 @@ from app.components import (
 )
 from analytics.dashboard import DashboardContext, build_dashboard_context
 from core.models import AISummary, AISummaryFocus
+from core.ai.budget import generate_budget_suggestions, BudgetSuggestion
 
 def _coerce_date_range(selection: Any) -> tuple[date, date]:
     if isinstance(selection, (list, tuple)):
@@ -212,14 +214,19 @@ def render_dashboard(
         ) = _resolve_focus(ai_summary, "dashboard_ai_focus", fallback_focus)
 
         if focus_options:
-            select_index = focus_options.index(current_focus) if current_focus in focus_options else 0
-            selected_focus = st.selectbox(
+            selected_focus = st.segmented_control(
                 "Insight focus",
                 options=focus_options,
-                index=select_index,
+                default=current_focus if current_focus in focus_options else None,
                 key="dashboard_ai_focus",
             )
-            focus_summary = focus_map.get(selected_focus, fallback_focus)
+            # Guarantee a string value for lookup
+            selected_value = (
+                selected_focus if isinstance(selected_focus, str) and selected_focus else current_focus
+            )
+            if not selected_value and focus_options:
+                selected_value = focus_options[0]
+            focus_summary = focus_map.get(selected_value, fallback_focus)
 
         render_ai_summary_card(
             focus_summary.headline,
@@ -229,13 +236,192 @@ def render_dashboard(
 
         st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
         render_recurring_charges(context["recurring"])
+        # New thin budget insights card under recurring section
+    st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
+    # (Cards moved to full-width row below)
 
     with right_col:
         render_snapshot_card(context["snapshot"])
-        # st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
-        render_budget_tracker(context["budget"])
+        st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
+        render_budget_spend_insights(context["budget"])
+
 
     st.markdown("<div class='layout-gap'></div>", unsafe_allow_html=True)
+
+    # Full-width row: first two wider than the last two
+    today = date.today()
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    day_of_month = today.day
+    budget_value = float(st.session_state.get("monthly_budget_value", context["budget"].allocated_budget))
+    current_spend = float(context["budget"].current_spend)
+    remaining = max(0.0, budget_value - current_spend)
+    days_left = max(1, days_in_month - day_of_month)
+    allowance = remaining / days_left
+    avg_so_far = current_spend / max(1, day_of_month)
+    target_pace = budget_value / max(1, days_in_month)
+    on_track = avg_so_far <= target_pace
+
+    # Uniform five-card row: input, monthly budget, allowance, pace, upcoming
+    c_input, c_budget, c_daily, c_pace, c_upcoming = st.columns([1, 1, 1, 1, 1], gap="medium")
+
+    # Input card (controls the shared monthly budget)
+    with c_input:
+        with st.container():
+            # Scope marker to allow CSS to style this container as a single card
+            st.markdown("<div class='budget-target-scope' style='display:none'></div>", unsafe_allow_html=True)
+            budget_key = "monthly_budget_value"
+            # Apply any AI-suggested value before the widget is created to avoid Streamlit state errors
+            pending_key = "pending_budget_value"
+            if pending_key in st.session_state:
+                try:
+                    st.session_state[budget_key] = float(st.session_state.pop(pending_key))
+                except Exception:
+                    st.session_state.pop(pending_key, None)
+            if budget_key not in st.session_state:
+                st.session_state[budget_key] = float(budget_value)
+            value = st.number_input(
+                "Budget target (£/month)",
+                min_value=0.0,
+                step=50.0,
+                format="%.0f",
+                key=budget_key,
+                help="What‑if target used for progress, pace, and savings/overspend calculations.",
+            )
+            st.markdown("<div class='budget-card__control'>", unsafe_allow_html=True)
+            st.markdown(
+                "<p class='input-helper' style='margin:0;'>This updates all cards in this row.</p>",
+                unsafe_allow_html=True,
+            )
+
+            # Small OpenAI-generated suggestion and one-liner rationale
+            # Build a compact analytics snapshot for the model using available context
+            suggestion_primary: BudgetSuggestion | None = None
+            suggestion_alts: list[BudgetSuggestion] = []
+            try:
+                # Use values already computed above for consistency
+                analytics_context = {
+                    "current_spend": round(current_spend, 2),
+                    "target_budget": round(float(st.session_state.get(budget_key, budget_value)), 2),
+                    "days_in_month": days_in_month,
+                    "day_of_month": day_of_month,
+                    "avg_daily_spend_to_date": round(avg_so_far, 2),
+                    "target_daily_pace": round(target_pace, 2),
+                    "projected_or_actual_spend": round(float(context["budget"].projected_or_actual_spend), 2),
+                    "is_month_complete": bool(context["budget"].is_month_complete),
+                }
+                primary, alts = generate_budget_suggestions(analytics_context=analytics_context)
+                # Normalise
+                suggestion_primary = BudgetSuggestion(primary.label, float(primary.amount), primary.rationale)
+                suggestion_alts = [BudgetSuggestion(x.label, float(x.amount), x.rationale) for x in (alts or [])]
+            except Exception:
+                suggestion_primary = None
+                suggestion_alts = []
+
+            if suggestion_primary is not None:
+                # Render suggestion and an apply button inside the same card
+                st.markdown(
+                    f"<p class='toolbar__helper' style='margin:0;'>AI suggestion: <strong>£{suggestion_primary.amount:,.0f}</strong> — {suggestion_primary.rationale}</p>",
+                    unsafe_allow_html=True,
+                )
+                st.write("")  # subtle spacer
+                if st.button(
+                    f"Use {suggestion_primary.label} (£{suggestion_primary.amount:,.0f})",
+                    key="apply_ai_budget_suggestion",
+                    help="Apply the AI-recommended budget target",
+                ):
+                    # Defer applying the value until next rerun to avoid mutating widget key post-creation
+                    st.session_state[pending_key] = float(suggestion_primary.amount)
+                    st.rerun()
+            else:
+                st.markdown(
+                    "<p class='toolbar__helper' style='margin:0;'>Set OPENAI_API_KEY to show an AI recommendation here.</p>",
+                    unsafe_allow_html=True,
+                )
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    with c_budget:
+        render_budget_controls(context["budget"])
+
+    with c_daily:
+        chip = "chip chip--pos" if on_track else "chip chip--neg"
+        st.markdown(
+            dedent(
+                f"""
+                <section class=\"card budget-controls-card\"> 
+                                    <div class=\"budget-card__header\" style=\"align-items:center; justify-content:space-between; gap:0.6rem;\"> 
+                                        <span class=\"budget-card__control-title\">Daily allowance (to hit target)</span>
+                    <span class=\"{chip}\">{'On-track' if on_track else 'Off-track'}</span>
+                  </div>
+                  <div style=\"display:grid; gap:0.35rem;\"> 
+                    <div class=\"metric-value\" style=\"font-size:1.2rem;\">≤ £{allowance:,.0f}/day for the next {days_left} days</div>
+                    <div class=\"toolbar__helper\">Avg so far £{avg_so_far:,.0f}/day · Target pace £{target_pace:,.0f}/day ({budget_value:,.0f}/{days_in_month})</div>
+                  </div>
+                </section>
+                """
+            ),
+            unsafe_allow_html=True,
+        )
+
+    with c_pace:
+        compare_target = target_pace
+        pace_ratio = (avg_so_far / compare_target) if compare_target > 0 else 0.0
+        pace_pct = (pace_ratio - 1.0) * 100.0
+        bar_fill = max(0.0, min(1.5, pace_ratio)) * 100
+        st.markdown(
+            dedent(
+                f"""
+                <section class=\"card budget-controls-card\"> 
+                  <div class=\"budget-card__header\" style=\"align-items:center; justify-content:space-between; gap:0.6rem;\"> 
+                                        <span class=\"budget-card__control-title\">Spending pace vs target</span>
+                  </div>
+                  <div class=\"budget-progress\"> 
+                    <div class=\"progress\" aria-hidden=\"true\"> 
+                      <div class=\"progress__fill\" style=\"width: {bar_fill:.0f}%\"></div>
+                    </div>
+                    <div class=\"progress__legend\"><span>Avg £{avg_so_far:,.0f}/day</span><span>Target £{compare_target:,.0f}/day</span></div>
+                    <p class=\"progress__note\">Pace {pace_pct:+.0f}% {'over' if pace_pct>0 else 'under'} target.</p>
+                  </div>
+                </section>
+                """
+            ),
+            unsafe_allow_html=True,
+        )
+
+    with c_upcoming:
+        upcoming_list = []
+        try:
+            charges = list(getattr(context["recurring"], "charges", []))
+        except Exception:
+            charges = []
+        from datetime import datetime as _dt
+        today_dt = _dt.today()
+        cutoff = today_dt + timedelta(days=7)
+        for ch in charges:
+            next_str = getattr(ch, "next_date", "")
+            try:
+                nd = _dt.strptime(next_str, "%d %b").replace(year=today.year)
+            except Exception:
+                try:
+                    nd = _dt.strptime(next_str, "%Y-%m-%d")
+                except Exception:
+                    continue
+            if today_dt <= nd <= cutoff:
+                amt = float(getattr(ch, "amount", 0.0))
+                upcoming_list.append(f"{getattr(ch, 'name', 'Charge')} £{amt:,.0f} · due {nd.strftime('%d %b')}")
+        items_html = "<br/>".join(upcoming_list[:4]) if upcoming_list else "No upcoming charges in next 7 days."
+        st.markdown(
+            dedent(
+                f"""
+                <section class=\"card budget-controls-card\"> 
+                  <div class=\"budget-card__header\" style=\"align-items:center; justify-content:space-between; gap:0.6rem;\"> 
+                    <span class=\"budget-card__control-title\">Upcoming charges (7 days)</span>
+                  </div>
+                  <div class=\"toolbar__helper\">{items_html}</div>
+                </section>
+                """
+            ),
+            unsafe_allow_html=True,
+        )
 
     render_category_breakdown(context["category_summary"])
 

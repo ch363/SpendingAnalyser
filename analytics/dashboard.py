@@ -376,10 +376,15 @@ def build_net_flow_series(
     )
 
 
+# Number of days before a recurring charge when we flag it as "Due soon".
+# Adjust as needed if you want a wider or narrower window.
+DUE_SOON_THRESHOLD_DAYS = 5
+
+
 def _status_from_days(days_until_due: int) -> str:
     if days_until_due < 0:
         return "Overdue"
-    if days_until_due <= 3:
+    if days_until_due <= DUE_SOON_THRESHOLD_DAYS:
         return "Due soon"
     return "Up to date"
 

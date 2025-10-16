@@ -1,5 +1,11 @@
-"""Budget tracker card rendered in a single st.markdown via card_html,
-mirroring the Monthly Snapshot pattern."""
+"""Budget widgets: split into spend insights (metrics) and a thin controls card.
+
+Previously this module rendered a single combined card. We now expose:
+ - render_budget_spend_insights(tracker): right-column metrics only
+ - render_budget_controls(tracker): thin card with target control + progress
+
+Both parts share the same `monthly_budget_value` session key so they stay in sync.
+"""
 
 from __future__ import annotations
 
@@ -54,7 +60,7 @@ def _progress_block(spend: float, budget: float) -> str:
     )
 
 
-def _budget_card_html(tracker: BudgetTracker, budget_value: float) -> str:
+def _budget_spend_html(tracker: BudgetTracker, budget_value: float) -> str:
     # Use the user-chosen budget value for all calculations to keep the UI consistent
     budget = float(max(budget_value, 0.0))
 
@@ -95,11 +101,12 @@ def _budget_card_html(tracker: BudgetTracker, budget_value: float) -> str:
         actual_chip_class = "chip"
         proj_chip_class = "chip"
 
+    # Header becomes "Spend insights" (no controls wording)
     header_html = dedent(
         f"""
         <header class="budget-card__header">
           <div>
-            <span class="pill">Budget &amp; controls</span>
+            <span class="pill">Spend insights</span>
             <h3 class="section-title">{escape(tracker.title)}</h3>
           </div>
           <div class="budget-card__status" aria-live="polite">
@@ -137,35 +144,12 @@ def _budget_card_html(tracker: BudgetTracker, budget_value: float) -> str:
         """
     )
 
-    progress_html = _progress_block(tracker.projected_or_actual_spend, budget_value)
-
-    footer_html = dedent(
-        f"""
-        <footer class="budget-card__footer">
-          <span>Allocation</span>
-          <span>{_format_currency(budget_value)} target</span>
-        </footer>
-        """
-    )
-
-    # Single HTML blob, like Monthly Snapshot’s `card_html`
+    # Spend insights card (metrics only)
     return dedent(
         f"""
-        <section class="card budget-card" role="region" aria-label="Budget tracker">
+        <section class="card budget-card" role="region" aria-label="Budget spend insights">
           {header_html}
           {metrics_html}
-          <div class="budget-card__controls">
-            <div class="budget-card__control">
-              <span class="budget-card__control-title">Monthly budget</span>
-              <p class="budget-card__control-helper">
-                Adjust to explore different spending targets.
-              </p>
-              <!-- Note: the Streamlit number_input is rendered separately; this line is display-only -->
-              <div class="budget-card__control-readout">Target: {_format_currency(budget_value)}</div>
-            </div>
-            {progress_html}
-          </div>
-          {footer_html}
         </section>
         """
     )
@@ -175,28 +159,56 @@ def _left_align_html(s: str) -> str:
     return "\n".join(line.lstrip() for line in s.splitlines())
 
 
-def render_budget_tracker(tracker: BudgetTracker) -> float:
-    """Render the budget card in one st.markdown call (like snapshot) and return the chosen budget."""
-    budget_key = "monthly_budget_value"
-    if budget_key not in st.session_state:
-        st.session_state[budget_key] = float(tracker.allocated_budget)
-
-    # 1) Read the control value first (widget can’t live *inside* the HTML card)
-    chosen = st.number_input(
-        "Monthly budget",
-        min_value=0.0,
-        step=50.0,
-        format="%.0f",
-        key=budget_key,
-        label_visibility="collapsed",
-    )
-    chosen = float(chosen)
-
-    # 2) Build one `card_html` string and render once (matches the Monthly Snapshot pattern)
-    card_html = _budget_card_html(tracker, chosen)
-    st.markdown(_left_align_html(card_html), unsafe_allow_html=True)
-
-    return chosen
+def _get_budget_value(default_value: float) -> float:
+  """Shared getter for the session-stored monthly budget value."""
+  budget_key = "monthly_budget_value"
+  if budget_key not in st.session_state:
+    st.session_state[budget_key] = float(default_value)
+  return float(st.session_state[budget_key])
 
 
-__all__ = ["render_budget_tracker"]
+def render_budget_spend_insights(tracker: BudgetTracker) -> None:
+  """Render the metrics-only budget spend insights card (right column)."""
+  chosen = _get_budget_value(tracker.allocated_budget)
+  card_html = _budget_spend_html(tracker, chosen)
+  st.markdown(_left_align_html(card_html), unsafe_allow_html=True)
+
+
+def render_budget_controls(tracker: BudgetTracker) -> float:
+  """Render a thin card with the monthly budget progress and current target.
+
+  The target value is read from `st.session_state["monthly_budget_value"]`, which
+  should be controlled by the dedicated input card in the layout.
+  """
+  chosen = _get_budget_value(tracker.allocated_budget)
+
+  # Optionally adjust projections if the user chose to exclude upcoming charges
+  projected_value = float(tracker.projected_or_actual_spend)
+  if bool(st.session_state.get("exclude_upcoming_from_projections", False)):
+    adjustment = float(st.session_state.get("exclude_upcoming_adjustment", 0.0))
+    projected_value = max(0.0, projected_value - max(0.0, adjustment))
+
+  progress_html = _progress_block(projected_value, chosen)
+  card_html = dedent(
+    f"""
+    <section class="card budget-controls-card" role="region" aria-label="Budget insights">
+      <div class="budget-card__control">
+      <span class="budget-card__control-title">Monthly budget</span>
+      <div class="budget-card__control-readout">Target: {_format_currency(chosen)}</div>
+      </div>
+      {progress_html}
+      <footer class="budget-card__footer">
+      <span>Allocation</span>
+      <span>{_format_currency(chosen)} target</span>
+      </footer>
+    </section>
+    """
+  )
+  st.markdown(_left_align_html(card_html), unsafe_allow_html=True)
+  return chosen
+
+
+__all__ = [
+  "render_budget_spend_insights",
+  "render_budget_controls",
+]

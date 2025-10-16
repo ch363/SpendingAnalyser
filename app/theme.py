@@ -358,7 +358,15 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 		.snapshot-card__grid {{
 			display: grid;
 			gap: 1.4rem 2.1rem;
-			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			/* Force two metrics per row on typical screens */
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}}
+
+		/* On small screens, fall back to a single column for readability */
+		@media (max-width: 640px) {{
+			.snapshot-card__grid {{
+				grid-template-columns: 1fr;
+			}}
 		}}
 
 		.snapshot-card__metric {{
@@ -436,6 +444,20 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			color: var(--app-text);
 		}}
 
+		/* Thin budget insights card */
+		.budget-controls-card {{
+			padding: 1rem 1.2rem;
+			gap: 0.9rem;
+			min-height: 200px;
+		}}
+
+		/* Uniform insight row cards */
+		.uniform-insight-row {{
+			display: grid;
+			grid-auto-rows: 1fr;
+			min-height: 200px;
+		}}
+
 		.budget-progress {{
 			display: grid;
 			gap: 0.65rem;
@@ -471,6 +493,32 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 
 		.layout-gap {{
 			height: 1.6rem;
+		}}
+
+		/* Budget target card: style the block that contains the number input and its related content */
+		div[data-testid="stVerticalBlock"]:has(div[data-testid="stNumberInput"]) {{
+			background: var(--card-bg);
+			border: 1px solid var(--card-border);
+			border-radius: var(--card-radius);
+			padding: 1rem 1.2rem;
+			box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+			min-height: 200px;
+			display: grid;
+			gap: 0.6rem;
+			align-content: start;
+		}}
+
+		/* Alternate hook: style any container that includes our scope marker */
+		div[data-testid="stVerticalBlock"]:has(.budget-target-scope) {{
+			background: var(--card-bg);
+			border: 1px solid var(--card-border);
+			border-radius: var(--card-radius);
+			padding: 1rem 1.2rem;
+			box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+			min-height: 200px;
+			display: grid;
+			gap: 0.6rem;
+			align-content: start;
 		}}
 
 		div[data-testid="stNumberInput"] > label {{
