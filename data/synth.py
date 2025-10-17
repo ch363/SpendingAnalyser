@@ -131,6 +131,45 @@ UTILITY_MERCHANTS: Sequence[Tuple[MerchantProfile, float, float]] = (
         -56.0,
         0.06,
     ),
+    (
+        MerchantProfile(
+            description="DIRECT DEBIT BRITISH GAS",
+            mcc="4900",
+            category="utilities",
+            channel="direct_debit",
+            city="London",
+            country="GBR",
+            default_note="Gas supply",
+        ),
+        -68.0,
+        0.08,
+    ),
+    (
+        MerchantProfile(
+            description="DIRECT DEBIT COUNCIL TAX",
+            mcc="9399",
+            category="utilities",
+            channel="direct_debit",
+            city="London",
+            country="GBR",
+            default_note="Council tax",
+        ),
+        -145.0,
+        0.02,
+    ),
+    (
+        MerchantProfile(
+            description="DIRECT DEBIT EE MOBILE",
+            mcc="4814",
+            category="utilities",
+            channel="direct_debit",
+            city="London",
+            country="GBR",
+            default_note="Mobile phone bill",
+        ),
+        -32.0,
+        0.05,
+    ),
 )
 
 GROCERY_MERCHANTS: Sequence[MerchantProfile] = (
@@ -739,8 +778,8 @@ def generate_synthetic_transactions(
         schedule_transaction(rent_date, rent_amount, RENT_MERCHANT)
 
         # Utilities
-        utility_days = (6, 12, 20)
-        for (merchant, base_amount, drift_pct), utility_day in zip(UTILITY_MERCHANTS, utility_days):
+        utility_days = (3, 6, 9, 12, 16, 20)
+        for (merchant, base_amount, drift_pct), utility_day in zip(UTILITY_MERCHANTS, utility_days, strict=False):
             utility_date = _clamp_day(year, month, utility_day)
             amount = base_amount * (1 + rng.normal(0, drift_pct))
             schedule_transaction(utility_date, amount, merchant)

@@ -87,10 +87,24 @@ def build_vendor_chart(vendor_df: pd.DataFrame) -> go.Figure:
     vendor_df["formatted_amount"] = vendor_df["amount"].map(lambda x: f"£{x:,.0f}")
     vendor_df["formatted_share"] = vendor_df["share"].map(lambda x: f"{x:.1%}")
 
+    # Wrap long vendor labels onto two lines to prevent clipping/overlap
+    def _wrap_label(label: str, max_len: int = 24) -> str:
+        if not isinstance(label, str):
+            return str(label)
+        if len(label) <= max_len:
+            return label
+        # Try to break on the last space before the limit; otherwise hard break
+        cut = label.rfind(" ", 0, max_len)
+        if cut == -1:
+            cut = max_len
+        return label[:cut] + "<br>" + label[cut:].strip()
+
+    vendor_df["label_wrapped"] = vendor_df["label"].apply(_wrap_label)
+
     fig = px.bar(
         vendor_df,
         x="amount",
-        y="label",
+        y="label_wrapped",
         orientation="h",
         text="formatted_amount",
     color_discrete_sequence=[TOKENS.vendor_bar_color],
@@ -105,12 +119,19 @@ def build_vendor_chart(vendor_df: pd.DataFrame) -> go.Figure:
         cliponaxis=False,
     )
 
+    # Dynamic height to reduce overlap; larger margins to avoid label clipping
+    n_bars = int(vendor_df.shape[0])
+    dynamic_height = max(260, 34 * n_bars + 80)
     fig.update_layout(
-        margin=dict(l=0, r=10, t=20, b=0),
-        xaxis=dict(title="Spend (£)", showgrid=False, zeroline=False),
+        margin=dict(l=160, r=90, t=30, b=20),
+        xaxis=dict(title="Spend (£)", showgrid=False, zeroline=False, automargin=True),
         yaxis=dict(title="Merchant", automargin=True),
         bargap=0.35,
-        height=240,
+        height=dynamic_height,
     )
+
+    # Ensure labels outside bars aren't clipped by the plotting area
+    fig.update_yaxes(automargin=True)
+    fig.update_xaxes(automargin=True)
 
     return fig

@@ -36,7 +36,7 @@ SUMMARY_FOCUS_DEFINITIONS: tuple[FocusDefinition, ...] = (
             "Summarise overall budget health with a supportive, non-alarmist tone. "
             "Offer specific, bite-sized next steps and include helpful context (e.g., "
             "fixed bills like rent landing at the start of the month can skew week one). "
-            "Narrative should be 4-7 sentences."
+            "Narrative should be 6-10 sentences."
         ),
     ),
     FocusDefinition(
@@ -44,7 +44,7 @@ SUMMARY_FOCUS_DEFINITIONS: tuple[FocusDefinition, ...] = (
         guidance=(
             "Explain which categories drive spend this month with supportive coaching. "
             "Mention shifts vs prior period and suggest one small, practical optimisation. "
-            "Narrative should be 4-7 sentences."
+            "Narrative should be 6-10 sentences."
         ),
     ),
     FocusDefinition(
@@ -52,14 +52,14 @@ SUMMARY_FOCUS_DEFINITIONS: tuple[FocusDefinition, ...] = (
         guidance=(
             "Focus on subscription commitments with a calm, constructive tone. Highlight monthly and lifetime cost, "
             "call out notable services, and suggest gentle actions (e.g., pause or downgrade) where it makes sense. "
-            "Narrative should be 4-7 sentences."
+            "Narrative should be 6-10 sentences."
         ),
     ),
     FocusDefinition(
         label="Recurring",
         guidance=(
             "Cover recurring charges outside subscriptions in a reassuring way. Note upcoming dues, "
-            "cash considerations, and one or two simple preparation steps. Narrative should be 4-7 sentences."
+            "cash considerations, and one or two simple preparation steps. Narrative should be 6-10 sentences."
         ),
     ),
 )
@@ -92,8 +92,8 @@ def _build_prompt(
             "Use a calm, supportive, and non-alarmist tone (no fear-trigger words like 'concerning' or 'immediate attention').",
             "Return guidance that is specific, concise, and actionable.",
             "Headlines must be under 110 characters and read like coach messaging.",
-            "Paragraph should contain 4-7 sentences.",
-            "Provide 2 to 4 supporting bullet points per focus.",
+            "Paragraph should contain 6-10 sentences.",
+            "Provide 3 to 5 supporting bullet points per focus.",
             "Do not hallucinate data. Only use what's provided in analytics_context.",
             "Amounts are in GBP. Preserve the currency when referencing values.",
             "When helpful, include context like fixed bills at the start of the month skewing early-week trends, or payday effects.",
@@ -256,7 +256,7 @@ def build_focus_summaries(
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.2,
-                "max_output_tokens": 1200,
+                "max_output_tokens": 1800,
             }
             optional = {"response_format": {"type": "json_object"}}
             response = _call_with_optional_args(client.responses.create, base, optional)
@@ -268,7 +268,7 @@ def build_focus_summaries(
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.2,
-                "max_tokens": 800,
+                "max_tokens": 1200,
             }
             optional = {"response_format": {"type": "json_object"}}
             response = _call_with_optional_args(client.chat.completions.create, base, optional)

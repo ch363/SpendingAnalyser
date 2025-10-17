@@ -406,7 +406,13 @@ def _build_recurring_entries(
     expenses["description"] = expenses["merchant"]
 
     today = pd.Timestamp(reference_date or frame["date"].max()).normalize()
-    return detect_recurring_transactions(expenses, today=today, amount_tolerance=0.1, min_occurrences=3)
+    # Slightly relax thresholds so more recurring items qualify
+    return detect_recurring_transactions(
+        expenses,
+        today=today,
+        amount_tolerance=0.15,
+        min_occurrences=2,
+    )
 
 
 def build_subscription_tracker(
@@ -481,14 +487,22 @@ def build_recurring_charges_tracker(
     transactions: pd.DataFrame,
     *,
     reference_date: date | None = None,
-    top_n: int = 5,
+    top_n: int = 8,
 ) -> RecurringChargesTracker:
     entries = _build_recurring_entries(transactions, reference_date=reference_date)
     if not entries:
         return RecurringChargesTracker("Recurring charges", "Upcoming", ())
 
+    # Restrict to monthly bills only (utilities, rent) and exclude subscriptions/fitness/etc.
+    allowed_categories = {"utilities", "rent"}
+    monthly_bills = [
+        e for e in entries
+        if int(e.get("interval_days", 0)) >= 28
+        and str(e.get("category", "")).lower() in allowed_categories
+    ]
+
     sorted_entries = sorted(
-        entries,
+        monthly_bills,
         key=lambda item: (int(item["days_until_due"]), -float(item["average_amount"])),
     )
 

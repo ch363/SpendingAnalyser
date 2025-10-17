@@ -84,7 +84,12 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 		.app-shell {{
 			max-width: 1240px;
 			margin: 0 auto;
-			padding: 1.25rem 1.25rem 2rem;
+			padding: 1rem 1.25rem 2rem;
+		}}
+
+		/* Reduce top gap for the first card inside the right column */
+		section[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlock"]:first-child div[data-testid="stVerticalBlock"]:has(.budget-target-scope) {{
+			margin-top: -0.35rem;
 		}}
 
 		.card {{
@@ -495,8 +500,12 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			height: 1.6rem;
 		}}
 
-		/* Budget target card: style the block that contains the number input and its related content */
-		div[data-testid="stVerticalBlock"]:has(div[data-testid="stNumberInput"]) {{
+		/* Budget target card: style only the nearby container that includes our scope marker */
+		div[data-testid="stVerticalBlock"]:is(
+			:has(> .budget-target-scope),
+			:has(> div > .budget-target-scope),
+			:has(> div > div > .budget-target-scope)
+		) {{
 			background: var(--card-bg);
 			border: 1px solid var(--card-border);
 			border-radius: var(--card-radius);
@@ -508,8 +517,8 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			align-content: start;
 		}}
 
-		/* Alternate hook: style any container that includes our scope marker */
-		div[data-testid="stVerticalBlock"]:has(.budget-target-scope) {{
+		/* Fallback: style only the innermost vertical block that directly contains the number input */
+		div[data-testid="stVerticalBlock"]:has(div[data-testid="stNumberInput"]):not(:has(div[data-testid="stVerticalBlock"] div[data-testid="stNumberInput"])) {{
 			background: var(--card-bg);
 			border: 1px solid var(--card-border);
 			border-radius: var(--card-radius);
@@ -993,6 +1002,46 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 		.stRadio > label {{
 			font-weight: 500;
 			color: inherit;
+		}}
+
+		/* Segmented control theming: selected state and subtle border */
+		div[data-testid="stSegmentedControl"] {{
+			--seg-bg: #fff;
+			--seg-border: var(--app-border);
+			--seg-pill: rgba(37,99,235,0.08);
+			--seg-pill-border: rgba(37,99,235,0.25);
+			background: var(--seg-bg);
+			border: 1px solid var(--seg-border);
+			border-radius: 12px;
+			padding: 4px;
+		}}
+
+		div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {{
+			background: var(--seg-pill);
+			border: 1px solid var(--seg-pill-border);
+			border-radius: 10px !important;
+			font-weight: 600;
+			color: var(--app-blue);
+			box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+		}}
+
+		/* Red-selected variant for the period control */
+		.period-control div[data-testid="stSegmentedControl"] button[aria-pressed="true"] {{
+			background: rgba(220,38,38,0.10);
+			border-color: rgba(220,38,38,0.35);
+			color: #dc2626; /* Tailwind red-600 */
+		}}
+
+		.period-control .control-label {{
+			font-size: .9rem;
+			margin: 0 0 .35rem;
+			color: var(--app-text-muted);
+		}}
+
+		/* Small utility to right-align a control block */
+		.controls--right {{
+			display: flex;
+			justify-content: flex-end;
 		}}
 		"""
 	)
