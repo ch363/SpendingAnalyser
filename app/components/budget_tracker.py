@@ -1,10 +1,7 @@
 """Budget widgets: split into spend insights (metrics) and a thin controls card.
 
-Previously this module rendered a single combined card. We now expose:
+Previously this module rendered a single combined card. We now expose only:
  - render_budget_spend_insights(tracker): right-column metrics only
- - render_budget_controls(tracker): thin card with target control + progress
-
-Both parts share the same `monthly_budget_value` session key so they stay in sync.
 """
 
 from __future__ import annotations
@@ -33,31 +30,6 @@ def _chip_text(label: str, is_positive: bool) -> tuple[str, str]:
     prefix = "↓ " if is_positive else "↑ "
     return f"{prefix}{clean}".strip(), chip_class
 
-
-def _progress_block(spend: float, budget: float) -> str:
-    ratio = 0.0 if budget <= 0 else max(0.0, spend / max(budget, 1e-9))
-    fill = min(ratio, 1.0) * 100
-    overshoot = spend - budget
-    if budget <= 0:
-        note = "Assign a budget to start tracking utilisation."
-    elif overshoot > 0:
-        note = f"{_format_currency(overshoot)} over target"
-    else:
-        note = f"{_format_currency(abs(overshoot))} remaining"
-
-    return dedent(
-        f"""
-        <div class="budget-progress" role="group" aria-label="Budget utilisation">
-          <div class="progress" aria-hidden="true">
-            <div class="progress__fill" style="width: {fill:.2f}%;"></div>
-          </div>
-          <div class="progress__legend">
-            <span>{_format_currency(spend)} vs {_format_currency(max(budget, 0))}</span>
-          </div>
-          <p class="progress__note">{note}</p>
-        </div>
-        """
-    )
 
 
 def _budget_spend_html(tracker: BudgetTracker, budget_value: float) -> str:
@@ -174,41 +146,6 @@ def render_budget_spend_insights(tracker: BudgetTracker) -> None:
   st.markdown(_left_align_html(card_html), unsafe_allow_html=True)
 
 
-def render_budget_controls(tracker: BudgetTracker) -> float:
-  """Render a thin card with the monthly budget progress and current target.
-
-  The target value is read from `st.session_state["monthly_budget_value"]`, which
-  should be controlled by the dedicated input card in the layout.
-  """
-  chosen = _get_budget_value(tracker.allocated_budget)
-
-  # Optionally adjust projections if the user chose to exclude upcoming charges
-  projected_value = float(tracker.projected_or_actual_spend)
-  if bool(st.session_state.get("exclude_upcoming_from_projections", False)):
-    adjustment = float(st.session_state.get("exclude_upcoming_adjustment", 0.0))
-    projected_value = max(0.0, projected_value - max(0.0, adjustment))
-
-  progress_html = _progress_block(projected_value, chosen)
-  card_html = dedent(
-    f"""
-    <section class="card budget-controls-card" role="region" aria-label="Budget insights">
-      <div class="budget-card__control">
-      <span class="budget-card__control-title">Monthly budget</span>
-      <div class="budget-card__control-readout">Target: {_format_currency(chosen)}</div>
-      </div>
-      {progress_html}
-      <footer class="budget-card__footer">
-      <span>Allocation</span>
-      <span>{_format_currency(chosen)} target</span>
-      </footer>
-    </section>
-    """
-  )
-  st.markdown(_left_align_html(card_html), unsafe_allow_html=True)
-  return chosen
-
-
 __all__ = [
   "render_budget_spend_insights",
-  "render_budget_controls",
 ]

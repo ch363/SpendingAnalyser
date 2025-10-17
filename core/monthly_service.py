@@ -21,8 +21,18 @@ class MonthlyOverview:
 
 def _ensure_datetime(frame: pd.DataFrame) -> pd.DataFrame:
     data = frame.copy()
-    data["date"] = pd.to_datetime(data.get("date"), errors="coerce")
-    data["amount"] = pd.to_numeric(data.get("amount"), errors="coerce")
+    # Guard conversions to satisfy static type checkers and ensure columns exist
+    if "date" in data.columns:
+        data["date"] = pd.to_datetime(data["date"], errors="coerce")  # type: ignore[arg-type]
+    else:
+        # Create a datetime column with NaT values matching row count
+        data["date"] = pd.to_datetime(pd.Series([pd.NaT] * len(data)))
+
+    if "amount" in data.columns:
+        data["amount"] = pd.to_numeric(data["amount"], errors="coerce")  # type: ignore[arg-type]
+    else:
+        # Create a numeric amount column defaulting to 0.0
+        data["amount"] = pd.Series([0.0] * len(data), dtype="float64")
     if "is_refund" not in data.columns:
         data["is_refund"] = False
     else:
@@ -108,16 +118,18 @@ def _build_snapshot_metrics(
         if not daily.empty:
             quiet_day = daily.idxmin()
             busy_day = daily.idxmax()
+            quiet_label = pd.Timestamp(quiet_day).strftime('%d %b')
+            busy_label = pd.Timestamp(busy_day).strftime('%d %b')
             metrics.append(
                 SnapshotMetric(
                     label="Quietest day",
-                    value=f"{_format_currency(float(daily.min()))} ({quiet_day.strftime('%d %b')})",
+                    value=f"{_format_currency(float(daily.min()))} ({quiet_label})",
                 )
             )
             metrics.append(
                 SnapshotMetric(
                     label="Busiest day",
-                    value=f"{_format_currency(float(daily.max()))} ({busy_day.strftime('%d %b')})",
+                    value=f"{_format_currency(float(daily.max()))} ({busy_label})",
                 )
             )
 
@@ -181,7 +193,8 @@ def _monthly_spend_history(frame: pd.DataFrame) -> pd.Series:
 def _estimate_budget(frame: pd.DataFrame, current_period: pd.Period) -> float:
     history = _monthly_spend_history(frame)
     if current_period in history.index:
-        history = history.drop(index=current_period)
+        # Filter out the current period without invoking drop() on Period index
+        history = history[history.index != current_period]
     if history.empty:
         fallback = 3000.0
         return fallback
