@@ -233,10 +233,6 @@ def render_dashboard(
                 key=budget_key,
                 help="What‑if target used for progress, pace, and savings/overspend calculations.",
             )
-            st.markdown(
-                "<p class='input-helper' style='margin:0;'>This updates all cards in this row.</p>",
-                unsafe_allow_html=True,
-            )
 
             suggestion_primary: BudgetSuggestion | None = None
             try:

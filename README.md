@@ -1,32 +1,55 @@
-# Spending Analyser (scaffold)
+# Spending Analyser
 
-This repository is a scaffold for a Streamlit-based spending analysis app.
+A Streamlit dashboard for analysing personal spend: monthly snapshot, budget tracking, recurring bills, subscriptions, vendor/category breakdowns, and a short AI-generated summary.
 
-Structure: The project contains packages for the Streamlit UI (`app/`), core business logic (`core/`), analytics, visualization, configuration, and tests.
+## How it works
 
-This README intentionally contains no implementation details — it's a scaffold only.
+- UI (`app/`): Streamlit components render the dashboard, charts, and controls. Entry point is `app/main.py`.
+- Core logic (`core/`):
+	- `data_loader.py` loads a CSV of transactions (defaults to `data/fixtures/seed.csv`) and normalises columns.
+	- `monthly_service.py` computes the Monthly Snapshot and Budget Tracker.
+	- `summary_service.py` builds category/merchant summaries.
+	- `core/ai` provides optional AI helpers for summaries and budget suggestions.
+- Analytics (`analytics/`): Additional builders used by the dashboard (e.g. recurring detection, AI forecasting helpers, categorisation).
+- Visualisation (`visualization/`): Plotly/Altair chart helpers and theme.
 
-## Quick start
+Data expectations (when replacing the demo CSV):
+- Required columns: `date`, `amount`. Optional: `txn_id`, `is_refund`, `description` (or `merchant`), etc.
+- Negative `amount` values are spend; positive values are income/refunds. Refunds can be flagged via `is_refund`.
 
-To explore the Trading212-inspired dashboard scaffold locally:
+## Run locally
+
+1) Create and activate a virtual environment (recommended)
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+2) Start the app
+
+```bash
 streamlit run app/main.py
 ```
 
-The layout renders demo data so you can iterate on the UI before connecting the backend services.
+Optional (VS Code): use the built-in task “Run Streamlit app”.
 
-## Enabling AI insights
+The app will load the demo dataset at `data/fixtures/seed.csv`. Replace that file (same columns) to view your own data.
 
-The hero summary card at the top of the dashboard now supports four AI-powered focus modes: General overview, Category breakdown, Subscription spotlight, and Recurring commitments. The guidance adapts to the transactions you load.
+## Enable AI insights (optional)
 
-To unlock OpenAI-generated copy, provide an API key via Streamlit secrets:
+The hero card supports AI focus modes (overview, categories, subscriptions, recurring). To enable OpenAI-powered copy:
 
-1. Create `.streamlit/secrets.toml` (already scaffolded in this repo) and set:
-	```toml
-	OPENAI_API_KEY = "sk-your-key"
-	```
-2. Restart the Streamlit app so the new secret is picked up.
+1) Create `.streamlit/secrets.toml` and add your key:
 
-If no key is available, the app falls back to on-device heuristics so you always see sensible guidance.
+```toml
+OPENAI_API_KEY = "sk-your-key"
+```
+
+2) Restart Streamlit. If no key is provided, the app falls back to local heuristics so the dashboard still works.
+
+## Troubleshooting
+
+- If Streamlit can’t find the CSV, ensure `data/fixtures/seed.csv` exists or update the loader to point at your file.
+- If AI features don’t show, confirm `OPENAI_API_KEY` is set in `.streamlit/secrets.toml` and the app was restarted.

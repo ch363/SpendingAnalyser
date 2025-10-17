@@ -8,19 +8,31 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from core.models import WeeklySpendPoint, WeeklySpendSeries
+from app.theme import FONT_STACK
 
 
 # ---- lightweight card CSS (scoped inside the iframe) ----
-_CARD_CSS = """
+_CARD_CSS = f"""
 <style>
-.app-card{background:#fff;border-radius:1.25rem;padding:1.5rem;border:1px solid rgba(148,163,184,.16);
-  box-shadow:0 18px 36px rgba(15,23,42,.08)}
-.app-card__header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-.pill{display:inline-flex;align-items:center;padding:.35rem .8rem;border-radius:999px;
+:root, html, body {{
+  font-family: {FONT_STACK};
+}}
+body {{
+  margin: 0;
+  color: #0f172a;
+  background: transparent;
+}}
+.app-card, .app-card * {{
+  font-family: inherit;
+}}
+.app-card {{background:#fff;border-radius:1.25rem;padding:1.5rem;border:1px solid rgba(148,163,184,.16);
+  box-shadow:0 18px 36px rgba(15,23,42,.08);}}
+.app-card__header {{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;}}
+.pill {{display:inline-flex;align-items:center;padding:.35rem .8rem;border-radius:999px;
   background:rgba(37,99,235,.10);font-size:.72rem;font-weight:600;letter-spacing:.06em;
-  text-transform:uppercase;color:#2563eb}
-.app-card__title{margin:.35rem 0 0;font-size:1.25rem;font-weight:600;color:#0f172a}
-.chart-wrap{margin-top:1rem}
+  text-transform:uppercase;color:#2563eb;}}
+.app-card__title {{margin:.35rem 0 0;font-size:1.25rem;font-weight:600;color:#0f172a;}}
+.chart-wrap {{margin-top:1rem;}}
 </style>
 """
 

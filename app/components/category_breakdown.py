@@ -7,6 +7,7 @@ import streamlit.components.v1 as components  # for one-shot HTML render
 
 from core.models import CategorySpend, CategorySummary, MerchantSpend
 from visualization.charts import build_category_chart, build_vendor_chart
+from app.theme import FONT_STACK
 
 # ---------- formatting ----------
 @dataclass(frozen=True)
@@ -39,6 +40,14 @@ def _fmt_metrics(c: CategorySpend) -> _FormattedMetrics:
 # ---------- css ----------
 _CARD_CSS = """
 <style>
+:root, html, body {
+  font-family: __FONT_STACK__;
+}
+body {
+  margin: 0;
+  color: #0f172a;
+  background: transparent;
+}
 .category-card{background:#fff;border-radius:1.75rem;padding:2rem;border:1px solid rgba(148,163,184,.16);
  box-shadow:0 25px 45px rgba(15,23,42,.08)}
 .category-card__header{display:flex;justify-content:space-between;align-items:flex-start;gap:1.5rem}
@@ -65,6 +74,7 @@ _CARD_CSS = """
 @media (max-width: 900px){ .charts-grid{grid-template-columns: 1fr;} }
 </style>
 """
+_CARD_CSS = _CARD_CSS.replace("__FONT_STACK__", FONT_STACK)
 
 # ---------- card builder ----------
 def _card_html(summary: CategorySummary, selected_name: str,

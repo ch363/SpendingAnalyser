@@ -27,6 +27,9 @@ class Palette:
 
 PALETTE = Palette()
 
+# Shared font family used across the dashboard and embedded components.
+FONT_STACK = '"Inter", "SF Pro Display", "Segoe UI", "Helvetica Neue", sans-serif'
+
 
 def build_global_css(palette: Palette = PALETTE) -> str:
 	"""Return bespoke CSS to tighten Streamlit's default styling."""
@@ -54,11 +57,11 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			--app-warning: {palette.warning};
 			--focus-ring: rgba(37, 99, 235, 0.45);
 			--card-radius: 1.5rem;
-			--font-family: "Inter", "SF Pro Display", "Segoe UI", "Helvetica Neue", sans-serif;
+			--font-family: {FONT_STACK};
 		}}
 
 		body {{
-			font-family: "Inter", "SF Pro Display", "Helvetica", sans-serif;
+			font-family: {FONT_STACK};
 			background: var(--app-bg);
 			color: var(--app-text);
 		}}

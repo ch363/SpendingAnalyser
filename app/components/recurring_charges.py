@@ -7,6 +7,108 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from core.models import RecurringCharge, RecurringChargesTracker
+from app.theme import FONT_STACK
+
+
+_CARD_CSS = """
+<style>
+:root, html, body {
+  font-family: __FONT_STACK__;
+}
+body {
+  margin: 0;
+  color: #0f172a;
+  background: transparent;
+}
+.app-card {
+  background: #ffffff;
+  border: 1px solid rgba(2, 6, 23, 0.06);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(2, 6, 23, 0.06);
+}
+.app-card, .app-card * {
+  font-family: inherit;
+}
+.app-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.10);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+.app-card__title {
+  margin: 0.35rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+.table-list {
+  margin-top: 1rem;
+}
+.table-list__header,
+.table-list__row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+}
+.table-list__header {
+  padding: 10px 0;
+  border-bottom: 1px solid #e6eef7;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.95rem;
+}
+.table-list__row {
+  padding: 12px 0;
+  border-bottom: 1px dashed #eef2f7;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+.table-list__row:last-child {
+  border-bottom: none;
+}
+.table-list__row span:first-child {
+  font-weight: 700;
+}
+.table-list__row span:nth-child(2),
+.table-list__row span:nth-child(3) {
+  color: #64748b;
+}
+.table-list__row span:nth-child(4) {
+  text-align: right;
+  font-weight: 700;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge--ok {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.badge--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+</style>
+"""
+_CARD_CSS = _CARD_CSS.replace("__FONT_STACK__", FONT_STACK)
 
 
 def render_recurring_charges(tracker: RecurringChargesTracker) -> None:
@@ -25,8 +127,8 @@ def render_recurring_charges(tracker: RecurringChargesTracker) -> None:
             f'</div>'
         )
 
-    html = f"""
-<div class="app-card recurring-card" style="background:#fff;border:1px solid rgba(2,6,23,.06);border-radius:16px;padding:16px 18px;box-shadow:0 1px 3px rgba(2,6,23,.06);">
+    html = _CARD_CSS + f"""
+<div class="app-card recurring-card">
   <div class="app-card__header">
     <div>
       <div class="pill">{escape(tracker.subtitle)}</div>
@@ -41,49 +143,6 @@ def render_recurring_charges(tracker: RecurringChargesTracker) -> None:
     {''.join(rows)}
   </div>
 </div>
-
-<style>
-.table-list--recurring .table-list__header,
-.table-list--recurring .table-list__row {{
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-  gap: 8px;
-  align-items: center;
-}}
-
-.table-list--recurring .table-list__header {{
-  padding: 10px 0;
-  border-bottom: 1px solid #e6eef7;
-  font-weight: 600;
-  color: #475569;
-  text-transform: none;
-  font-size: 0.95rem;
-}}
-
-.table-list--recurring .table-list__row {{
-  padding: 12px 0;
-  border-bottom: 1px dashed #eef2f7;
-  font-size: 0.95rem;
-  color: #0f172a;
-}}
-.table-list--recurring .table-list__row:last-child {{ border-bottom: none; }}
-
-/* Column-level adjustments */
-.table-list--recurring .table-list__row span:first-child {{ font-weight: 700; }}
-.table-list--recurring .table-list__row span:nth-child(2),
-.table-list--recurring .table-list__row span:nth-child(3) {{ color: #64748b; }}
-.table-list--recurring .table-list__row span:nth-child(4) {{ text-align: right; font-weight: 700; }}
-
-.badge {{
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}}
-.badge--ok {{ background: #ecfdf5; color: #065f46; }}
-.badge--warn {{ background: #fef3c7; color: #92400e; }}
-</style>
 """
 
     # Estimate height to avoid clipping (header + rows).
