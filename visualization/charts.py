@@ -79,7 +79,7 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
     )
 
     fig.update_layout(
-        margin=dict(l=0, r=0, t=0, b=0),
+        margin=dict(l=30, r=150, t=20, b=40),
         legend=dict(
             title="",
             orientation="v",
