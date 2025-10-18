@@ -60,18 +60,21 @@ body {
 .status-badge--improved{background:rgba(34,197,94,.16);color:#15803d}
 .status-badge--higher{background:rgba(239,68,68,.16);color:#b91c1c}
 .status-badge--neutral{background:rgba(148,163,184,.16);color:rgba(15,23,42,.68)}
-.category-card__metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1.1rem;margin-top:1.6rem}
+.category-card__metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1.1rem;margin:0}
 .category-card__metric{padding:1rem 1.2rem;border-radius:1rem;background:rgba(241,245,249,.6);display:flex;flex-direction:column;gap:.35rem}
 .category-card__metric span:first-child{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:rgba(15,23,42,.55)}
 .category-card__metric strong{font-size:1.25rem;color:#0f172a}
 .category-card__top-merchant{margin-top:1.4rem}
 .category-card__top-merchant span{font-size:.85rem;font-weight:600;color:rgba(15,23,42,.65);text-transform:uppercase;letter-spacing:.08em}
 .category-card__top-merchant p{margin:.5rem 0 0;font-size:.95rem;color:rgba(15,23,42,.85)}
-.chart-wrap{margin-top:1.6rem; min-height:360px; overflow:hidden}
+.chart-wrap{position:relative}
 
-/* side-by-side charts */
-.charts-grid{display:grid; grid-template-columns: 1.2fr 1fr; gap:2rem; align-items:start;}
-@media (max-width: 900px){ .charts-grid{grid-template-columns: 1fr;} }
+/* composite layout */
+.charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2.4rem;align-items:start;grid-template-areas:"donut insights";margin-top:2rem}
+.chart-wrap--insights{grid-area:insights;display:flex;flex-direction:column;gap:1.6rem}
+.chart-wrap--donut{grid-area:donut;display:flex;align-items:center;justify-content:center;min-height:460px;padding:1.6rem 0}
+.chart-wrap--donut > div{width:100%;max-width:760px;min-width:380px}
+@media (max-width:900px){.charts-grid{grid-template-columns:1fr;grid-template-areas:"donut" "insights";margin-top:1.6rem}.chart-wrap--donut{min-height:0;padding:0}.chart-wrap--donut > div{min-width:0;max-width:none}}
 </style>
 """
 _CARD_CSS = _CARD_CSS.replace("__FONT_STACK__", FONT_STACK)
@@ -94,24 +97,22 @@ def _card_html(summary: CategorySummary, selected_name: str,
   <div class="category-detail-panel__range" style="margin:.25rem 0 1rem;color:rgba(15,23,42,.6)">
     Showing spend for {summary.start_date.strftime("%d %b %Y")} – {summary.end_date.strftime("%d %b %Y")} · <strong>{selected_name}</strong>
   </div>
-
-  <div class="category-card__metrics">
-    <div class="category-card__metric"><span>This period</span><strong>{metrics.this_period}</strong></div>
-    <div class="category-card__metric"><span>Share</span><strong>{metrics.share}</strong></div>
-    <div class="category-card__metric"><span>Previous</span><strong>{metrics.previous}</strong></div>
-    <div class="category-card__metric"><span>Change</span><strong>{metrics.change_amount}</strong><small>{metrics.change_pct}</small></div>
-  </div>
-
   <div class="charts-grid">
-    <div class="chart-wrap">
-      {cat_chart_html}
-    </div>
-    <div class="chart-wrap">
-    <div class="category-card__top-merchant">
-    <span>Top merchants this month</span>
-    <p>{top_html}</p>
-    </div>
+    <div class="chart-wrap chart-wrap--insights">
+      <div class="category-card__metrics">
+        <div class="category-card__metric"><span>This period</span><strong>{metrics.this_period}</strong></div>
+        <div class="category-card__metric"><span>Share</span><strong>{metrics.share}</strong></div>
+        <div class="category-card__metric"><span>Previous</span><strong>{metrics.previous}</strong></div>
+        <div class="category-card__metric"><span>Change</span><strong>{metrics.change_amount}</strong><small>{metrics.change_pct}</small></div>
+      </div>
+      <div class="category-card__top-merchant">
+        <span>Top merchants this month</span>
+        <p>{top_html}</p>
+      </div>
       {vend_chart_html}
+    </div>
+    <div class="chart-wrap chart-wrap--donut">
+      {cat_chart_html}
     </div>
   </div>
 

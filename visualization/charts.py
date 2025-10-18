@@ -44,6 +44,7 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
     )
 
     hover_text = []
+    text_positions: list[str] = []
     for _, row in data.iterrows():
         current_val = row.get("CurrentValue", 0.0)
         share_val = row.get("Share", 0.0)
@@ -56,6 +57,9 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
         change_amt = 0.0 if pd.isna(change_amt) else float(change_amt)
         change_pct = 0.0 if pd.isna(change_pct) else float(change_pct)
 
+        # Use outside labels (with leader lines) for tiny slices to keep them legible
+        text_positions.append("inside" if share_val >= 0.055 else "outside")
+
         hover_text.append(
             f"{row['Category']}<br>"
             f"Spend: £{current_val:,.0f}<br>"
@@ -65,9 +69,10 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
         )
 
     fig.update_traces(
-        textposition="inside",
+        textposition=text_positions,
         texttemplate="%{label}<br>%{percent:.1%}",
-        textfont=dict(family=FONT_STACK, color=TOKENS.neutral_white, size=14),
+        insidetextfont=dict(family=FONT_STACK, color=TOKENS.neutral_white, size=14),
+        outsidetextfont=dict(family=FONT_STACK, color=TOKENS.label_color, size=13),
         hoverinfo="text",
         hovertext=hover_text,
         marker=dict(line=dict(color=TOKENS.neutral_white, width=2)),
