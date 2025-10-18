@@ -8,7 +8,6 @@ rounded corners and shadow renders consistently across pages.
 from __future__ import annotations
 
 from html import escape
-import streamlit as st
 import streamlit.components.v1 as components
 from core.models import Subscription, SubscriptionTracker
 from app.theme import FONT_STACK

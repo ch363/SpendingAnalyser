@@ -67,6 +67,11 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 		}}
 
 		.stApp {{
+		.metrics {{
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+			gap: 1rem;
+		}}
 			background: var(--app-bg);
 			color: var(--app-text);
 		}}
@@ -114,12 +119,19 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 			overflow: hidden;
 		}}
 
+		.metric-block {{
+			display: flex;
+			flex-direction: column;
+			gap: 0.4rem;
+		}}
+
 		.hero::after {{
 			content: "";
 			position: absolute;
 			inset: 12px;
 			border-radius: 1.2rem;
-			border: 1px solid rgba(255, 255, 255, 0.25);
+			display: block;
+			font-size: 1.75rem;
 			opacity: 0.7;
 			pointer-events: none;
 		}}
@@ -171,9 +183,11 @@ def build_global_css(palette: Palette = PALETTE) -> str:
 		}}
 
 		.metric-value {{
+			display: block;
 			font-size: 1.75rem;
 			font-weight: 700;
 			color: var(--app-text);
+			margin-top: 0.1rem;
 		}}
 
 		.chip {{

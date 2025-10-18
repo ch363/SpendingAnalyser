@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable, Mapping, Sequence, TypedDict, cast
+from typing import Mapping, Sequence, TypedDict, cast
 
 import pandas as pd
 
+from core.ai.summary import SUMMARY_FOCUS_DEFINITIONS, build_focus_summaries
 from core.models import (
     AISummary,
     AISummaryFocus,
@@ -22,7 +23,9 @@ from core.models import (
     WeeklySpendPoint,
     WeeklySpendSeries,
 )
-from core.ai.summary import SUMMARY_FOCUS_DEFINITIONS, build_focus_summaries
+from core.summary_service import build_category_summary
+
+
 class DashboardContext(TypedDict):
     snapshot: MonthlySnapshot
     budget: BudgetTracker
@@ -33,7 +36,15 @@ class DashboardContext(TypedDict):
     recurring: RecurringChargesTracker
     net_flow: NetFlowSeries
 
-from core.summary_service import build_category_summary
+
+class DashboardBaseline(TypedDict):
+    frame: pd.DataFrame
+    snapshot: MonthlySnapshot
+    budget: BudgetTracker
+    category_summary: CategorySummary
+    subscriptions: SubscriptionTracker
+    recurring: RecurringChargesTracker
+    net_flow: NetFlowSeries
 
 from .ai_forecasting import (
     WeeklyForecastRequest,
@@ -370,7 +381,7 @@ def build_net_flow_series(
 
     year_label = f"{period_index[0].strftime('%Y')} – {period_index[-1].strftime('%Y')}" if len(period_index) > 1 else period_index[0].strftime("%Y")
     return NetFlowSeries(
-        title="Yearly net flow",
+        title="Yearly financial flow",
         subtitle=year_label,
         months=tuple(months_data),
     )
@@ -664,13 +675,12 @@ def generate_ai_summary(
     )
 
 
-def build_dashboard_context(
+def build_dashboard_baseline(
     transactions: pd.DataFrame,
     *,
     start_date: date,
     end_date: date,
-    api_key: str | None = None,
-) -> DashboardContext:
+) -> DashboardBaseline:
     frame = _ensure_frame(transactions)
 
     snapshot = build_monthly_snapshot(frame, start_date=start_date, end_date=end_date)
@@ -682,7 +692,6 @@ def build_dashboard_context(
         title="Category insight",
         subtitle="Where money went",
     )
-
     subscriptions = build_subscription_tracker(
         frame,
         start_date=start_date,
@@ -690,34 +699,60 @@ def build_dashboard_context(
         reference_date=end_date,
     )
     recurring = build_recurring_charges_tracker(frame, reference_date=end_date)
-    ai_summary = generate_ai_summary(
-        snapshot=snapshot,
-        budget=budget,
-        category_summary=category_summary,
-        subscriptions=subscriptions,
-        recurring=recurring,
-    )
-    weekly_spend = build_weekly_spend_series(
-        frame,
-        start_date=start_date,
-        end_date=end_date,
-        api_key=api_key,
-    )
     net_flow = build_net_flow_series(frame, reference_date=end_date)
 
     return {
+        "frame": frame,
         "snapshot": snapshot,
         "budget": budget,
         "category_summary": category_summary,
-        "ai_summary": ai_summary,
-        "weekly_spend": weekly_spend,
         "subscriptions": subscriptions,
         "recurring": recurring,
         "net_flow": net_flow,
     }
 
 
+def build_dashboard_context(
+    transactions: pd.DataFrame,
+    *,
+    start_date: date,
+    end_date: date,
+    api_key: str | None = None,
+) -> DashboardContext:
+    baseline = build_dashboard_baseline(
+        transactions,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    ai_summary = generate_ai_summary(
+        snapshot=baseline["snapshot"],
+        budget=baseline["budget"],
+        category_summary=baseline["category_summary"],
+        subscriptions=baseline["subscriptions"],
+        recurring=baseline["recurring"],
+    )
+    weekly_spend = build_weekly_spend_series(
+        baseline["frame"],
+        start_date=start_date,
+        end_date=end_date,
+        api_key=api_key,
+    )
+
+    return {
+        "snapshot": baseline["snapshot"],
+        "budget": baseline["budget"],
+        "category_summary": baseline["category_summary"],
+        "ai_summary": ai_summary,
+        "weekly_spend": weekly_spend,
+        "subscriptions": baseline["subscriptions"],
+        "recurring": baseline["recurring"],
+        "net_flow": baseline["net_flow"],
+    }
+
+
 __all__ = [
+    "build_dashboard_baseline",
     "build_weekly_spend_series",
     "build_net_flow_series",
     "build_subscription_tracker",
@@ -725,4 +760,5 @@ __all__ = [
     "generate_ai_summary",
     "build_dashboard_context",
     "DashboardContext",
+    "DashboardBaseline",
 ]

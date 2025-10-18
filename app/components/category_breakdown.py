@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components  # for one-shot HTML render
 
-from core.models import CategorySpend, CategorySummary, MerchantSpend
+from core.models import CategorySpend, CategorySummary
 from visualization.charts import build_category_chart, build_vendor_chart
 from app.theme import FONT_STACK
 

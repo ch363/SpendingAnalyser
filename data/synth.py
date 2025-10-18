@@ -14,7 +14,7 @@ import os
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Callable, List, Optional, Sequence, Tuple, TypeVar
+from typing import List, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np
 import pandas as pd

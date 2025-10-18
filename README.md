@@ -5,6 +5,7 @@ A Streamlit dashboard for analysing personal spend: monthly snapshot, budget tra
 ## How it works
 
 - UI (`app/`): Streamlit components render the dashboard, charts, and controls. Entry point is `app/main.py`.
+	- `components/` houses the reusable card renderers (weekly spend, subscriptions, category insight, etc.) that embed Plotly charts via `components.html`.
 - Core logic (`core/`):
 	- `data_loader.py` loads a CSV of transactions (defaults to `data/fixtures/seed.csv`) and normalises columns.
 	- `monthly_service.py` computes the Monthly Snapshot and Budget Tracker.
@@ -35,7 +36,8 @@ streamlit run app/main.py
 
 Optional (VS Code): use the built-in task “Run Streamlit app”.
 
-The app will load the demo dataset at `data/fixtures/seed.csv`. Replace that file (same columns) to view your own data.
+The app regenerates the demo dataset (`data/fixtures/seed.csv`) with fresh synthetic transactions each time the Streamlit server starts. Set `SPENDING_ANALYSER_AUTO_SYNTH=0` before launching if you want to keep a custom CSV untouched.
+
 
 ## Enable AI insights (optional)
 

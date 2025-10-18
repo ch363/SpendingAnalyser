@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import logging
 import os
 import re
-import inspect
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 try:  # pragma: no cover - OpenAI is optional in some environments
@@ -37,6 +36,14 @@ SUMMARY_FOCUS_DEFINITIONS: tuple[FocusDefinition, ...] = (
             "Offer specific, bite-sized next steps and include helpful context (e.g., "
             "fixed bills like rent landing at the start of the month can skew week one). "
             "Narrative should be 6-10 sentences."
+        ),
+    ),
+    FocusDefinition(
+        label="Since you last visited",
+        guidance=(
+            "Call out meaningful movements since the user last opened the dashboard. "
+            "Highlight what improved or slipped, mention any new large transactions or forecast shifts, "
+            "and suggest one or two light-touch actions to stay on track. Narrative should be 6-10 sentences."
         ),
     ),
     FocusDefinition(

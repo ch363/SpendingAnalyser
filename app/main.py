@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -16,6 +17,23 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.layout import render_dashboard
 from app.theme import apply_theme
 from core.data_loader import load_transactions
+from data.synth import write_transactions_csv
+
+DATA_FIXTURE_PATH = PROJECT_ROOT / "data" / "fixtures" / "seed.csv"
+AUTO_SYNTH_ENV = "SPENDING_ANALYSER_AUTO_SYNTH"
+
+
+@st.cache_resource(show_spinner=False)
+def _refresh_seed_dataset() -> Path:
+    """Regenerate the synthetic transaction CSV once per server lifecycle."""
+
+    toggle = os.getenv(AUTO_SYNTH_ENV)
+    if toggle is not None and toggle.strip().lower() in {"0", "false", "no"}:
+        return DATA_FIXTURE_PATH
+
+    write_transactions_csv(path=str(DATA_FIXTURE_PATH))
+    load_transactions.cache_clear()
+    return DATA_FIXTURE_PATH
 
 
 def _default_date_range(transactions: pd.DataFrame) -> tuple[date, date]:
@@ -45,6 +63,8 @@ def main() -> None:
     )
 
     apply_theme()
+
+    _refresh_seed_dataset()
 
     transactions = load_transactions()
 

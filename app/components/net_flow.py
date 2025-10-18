@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import plotly.express as px
-import streamlit as st
 import streamlit.components.v1 as components
 
 from core.models import MonthlyFlow, NetFlowSeries

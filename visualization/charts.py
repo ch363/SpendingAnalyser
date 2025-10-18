@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
 from .theme import theme_tokens
+from app.theme import FONT_STACK
 
 TOKENS = theme_tokens()
 
@@ -43,17 +43,33 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
         color_discrete_sequence=color_sequence,
     )
 
+    hover_text = []
+    for _, row in data.iterrows():
+        current_val = row.get("CurrentValue", 0.0)
+        share_val = row.get("Share", 0.0)
+        change_amt = row.get("ChangeAmount", 0.0)
+        change_pct = row.get("PctChange", 0.0)
+
+        # Guard against NaN/None values when formatting
+        current_val = 0.0 if pd.isna(current_val) else float(current_val)
+        share_val = 0.0 if pd.isna(share_val) else float(share_val)
+        change_amt = 0.0 if pd.isna(change_amt) else float(change_amt)
+        change_pct = 0.0 if pd.isna(change_pct) else float(change_pct)
+
+        hover_text.append(
+            f"{row['Category']}<br>"
+            f"Spend: £{current_val:,.0f}<br>"
+            f"Share: {share_val:.1%}<br>"
+            f"Change: £{change_amt:,.0f}<br>"
+            f"Change %: {change_pct:+.1%}"
+        )
+
     fig.update_traces(
         textposition="inside",
         texttemplate="%{label}<br>%{percent:.1%}",
-        customdata=data[["CurrentValue", "Share", "ChangeAmount", "PctChange"]],
-        hovertemplate=(
-            "%{label}<br>"
-            "Spend: £%{customdata[0]:,.0f}<br>"
-            "Share: %{customdata[1]:.1%}<br>"
-            "Change: £%{customdata[2]:,.0f}<br>"
-            "Change %: %{customdata[3]:+.1%}<extra></extra>"
-        ),
+        textfont=dict(family=FONT_STACK, color=TOKENS.neutral_white, size=14),
+        hoverinfo="text",
+        hovertext=hover_text,
         marker=dict(line=dict(color=TOKENS.neutral_white, width=2)),
     )
 
@@ -66,8 +82,10 @@ def build_category_chart(category_df: pd.DataFrame) -> go.Figure:
             y=0.5,
             xanchor="left",
             x=1.05,
-            font=dict(color=TOKENS.label_color, family=TOKENS.label_font, size=TOKENS.label_size),
+            font=dict(color=TOKENS.label_color, family=FONT_STACK, size=TOKENS.label_size),
         ),
+        font=dict(family=FONT_STACK, color=TOKENS.label_color, size=TOKENS.label_size),
+        hoverlabel=dict(font=dict(family=FONT_STACK, color=TOKENS.label_color, size=TOKENS.label_size)),
         showlegend=True,
     )
 
@@ -107,7 +125,7 @@ def build_vendor_chart(vendor_df: pd.DataFrame) -> go.Figure:
         y="label_wrapped",
         orientation="h",
         text="formatted_amount",
-    color_discrete_sequence=[TOKENS.vendor_bar_color],
+        color_discrete_sequence=[TOKENS.vendor_bar_color],
     )
 
     fig.update_traces(
@@ -116,6 +134,7 @@ def build_vendor_chart(vendor_df: pd.DataFrame) -> go.Figure:
         ),
         customdata=vendor_df[["formatted_share"]].to_numpy(),
         textposition="outside",
+        textfont=dict(family=FONT_STACK, color=TOKENS.label_color, size=TOKENS.label_size),
         cliponaxis=False,
     )
 
@@ -128,6 +147,8 @@ def build_vendor_chart(vendor_df: pd.DataFrame) -> go.Figure:
         yaxis=dict(title="Merchant", automargin=True),
         bargap=0.35,
         height=dynamic_height,
+        font=dict(family=FONT_STACK, color=TOKENS.label_color, size=TOKENS.label_size),
+        hoverlabel=dict(font=dict(family=FONT_STACK, color=TOKENS.label_color, size=TOKENS.label_size)),
     )
 
     # Ensure labels outside bars aren't clipped by the plotting area

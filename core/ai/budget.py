@@ -15,7 +15,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 try:  # pragma: no cover - OpenAI is optional in some environments
     from openai import OpenAI
